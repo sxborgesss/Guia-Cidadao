@@ -1,21 +1,34 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './users/entities/user.entity';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
-
 @Module({
-  imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'backend',
-    }),
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+        }),
+
+        TypeOrmModule.forRoot({
+            type: 'postgres',
+            host: process.env.DB_HOST,
+            port: Number(process.env.DB_PORT),
+            username: process.env.DB_USERNAME,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_DATABASE,
+
+            autoLoadEntities: true,
+            synchronize: true,
+        }),
+        UsersModule,
+        AuthModule,
+    ],
+
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}
