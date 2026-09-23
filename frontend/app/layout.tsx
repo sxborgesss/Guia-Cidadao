@@ -51,6 +51,8 @@ export default function RootLayout({
             <nav className="hidden md:flex items-center gap-5 text-sm font-medium text-foreground-muted">
               <Link href="/servicos" className="hover:text-foreground transition-colors">
                 Serviços
+              </Link><Link href="/mapa" className="hover:text-foreground transition-colors">
+                Mapa
               </Link>
               <Link href="/painel" className="hover:text-foreground transition-colors">
                 Painel de Transparência
@@ -69,10 +71,10 @@ export default function RootLayout({
               Explorar Postos
             </Link>
             <Link
-                href="/avaliar"
+                href="/login"
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-4 text-xs font-semibold text-brand-contrast hover:bg-brand-hover active:bg-brand-pressed shadow-sm transition-colors"
             >
-              + Fazer Avaliação
+              Entrar
             </Link>
           </div>
         </div>
