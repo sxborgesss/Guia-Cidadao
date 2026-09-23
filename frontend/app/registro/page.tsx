@@ -75,7 +75,7 @@ export default function PaginaRegisto() {
                         ✓
                     </div>
                     <h1 className="mt-4 text-2xl font-extrabold text-slate-900 tracking-tight">
-                        Conta Cívica Criada!
+                        Conta Criada!
                     </h1>
                     <p className="mt-3 text-sm text-slate-600 leading-relaxed">
                         Bem-vindo ao FeedPalmas, <strong>{nome}</strong>. A sua conta foi registada com sucesso e já pode começar a avaliar os serviços da cidade.
