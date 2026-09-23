@@ -101,7 +101,7 @@ export default function PaginaRegisto() {
                 {/* Cabeçalho */}
                 <div className="mb-8 text-center">
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                        Criar Conta Cívica
+                        Criar Conta
                     </h1>
                     <p className="mt-2 text-sm text-slate-500">
                         Junte-se ao Guia Cidadão e ajude a transformar a gestão pública de Palmas.
