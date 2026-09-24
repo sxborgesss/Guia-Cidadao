@@ -1,34 +1,36 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-  Get,
-  Param,
-} from '@nestjs/common';
-import { ReviewsService } from './review.service';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ReviewsService } from './reviews.service';
+
+export class CreateReviewBodyDto {
+  nota: number;
+  comentario: string;
+  service_id: string;
+  user_id: string;
+}
 
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createReviewDto: CreateReviewDto, @Request() req: any) {
-    const userId = req.user.sub || req.user.id || req.user.userId;
+  async criar(@Body() body: any) {
+    const serviceId = body.service_id || body.serviceId;
+    const userId = body.user_id || body.userId;
+    const nota = Number(body.nota);
+    const comentario = body.comentario;
 
-    if (!userId) {
-      throw new Error('Não foi possível identificar o utilizador no token.');
-    }
-
-    return this.reviewsService.create(createReviewDto, userId);
+    return this.reviewsService.create(
+      {
+        nota,
+        comentario,
+        service_id: serviceId,
+      },
+      userId,
+    );
   }
 
   @Get('service/:serviceId')
-  findByService(@Param('serviceId') serviceId: string) {
+  async listarPorServico(@Param('serviceId') serviceId: string) {
     return this.reviewsService.findByService(serviceId);
   }
 }

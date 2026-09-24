@@ -4,9 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ServicesModule } from './services/services.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     }),
     UsersModule,
     AuthModule,
+    ServicesModule,
     ReviewsModule,
   ],
 

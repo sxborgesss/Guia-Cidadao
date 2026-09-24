@@ -1,311 +1,256 @@
 "use client";
 
-import { use, useState, useId } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface PageProps {
-    params: Promise<{ id: string }>;
+interface PublicService {
+  id: string;
+  nome: string;
+  categoria: string;
+  endereco: string;
+  mediaNota: number;
+  totalAvaliacoes: number;
 }
 
-const CRITERIOS_FEEDPALMAS = [
-    {
-        id: "atendimento",
-        label: "Atendimento Humano",
-        descricao: "Cortesia, presteza e clareza das orientações dos servidores",
-        icone: "👥",
-    },
-    {
-        id: "espera",
-        label: "Tempo de Espera",
-        descricao: "Agilidade da triagem e tempo decorrido na fila",
-        icone: "⏱️",
-    },
-    {
-        id: "infraestrutura",
-        label: "Infraestrutura e Acessibilidade",
-        descricao: "Limpeza, climatização, assentos e condições do prédio",
-        icone: "🏢",
-    },
-] as const;
+interface ReviewItem {
+  id: string;
+  nota: number;
+  comentario: string;
+  created_at: string;
+  user?: {
+    nome: string;
+  };
+}
 
-type CriterioKey = (typeof CRITERIOS_FEEDPALMAS)[number]["id"];
+export default function AvaliarPage() {
+  const routeParams = useParams();
+  const rawId = routeParams?.id;
+  const serviceId = Array.isArray(rawId) ? rawId[0] : (rawId as string);
+  const router = useRouter();
 
-export default function PaginaAvaliacaoFeedPalmas({ params }: PageProps) {
-    const { id } = use(params);
-    const formId = useId();
+  const [servico, setServico] = useState<PublicService | null>(null);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
-    const [notaGeral, setNotaGeral] = useState<number>(0);
-    const [hoverGeral, setHoverGeral] = useState<number>(0);
-    const [notas, setNotas] = useState<Record<CriterioKey, number>>({
-        atendimento: 0,
-        espera: 0,
-        infraestrutura: 0,
-    });
-    const [relato, setRelato] = useState<string>("");
-    const [isAnonimo, setIsAnonimo] = useState<boolean>(true);
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-    const [erroValidacao, setErroValidacao] = useState<string | null>(null);
+  // Estados do formulário
+  const [nota, setNota] = useState(5);
+  const [comentario, setComentario] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-    const handleNotaCriterio = (criterio: CriterioKey, valor: number) => {
-        setNotas((prev) => ({ ...prev, [criterio]: valor }));
-    };
+  const carregarDados = async () => {
+    if (!serviceId) return;
+    try {
+      // 1. Obter serviços para encontrar o posto atual
+      const resServicos = await fetch("http://localhost:3001/services");
+      if (resServicos.ok) {
+        const lista: PublicService[] = await resServicos.json();
+        const encontrado = lista.find((s) => s.id === serviceId);
+        if (encontrado) setServico(encontrado);
+      }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+      // 2. Obter avaliações do posto
+      const resReviews = await fetch(`http://localhost:3001/reviews/service/${serviceId}`);
+      if (resReviews.ok) {
+        const dadosReviews = await resReviews.json();
+        setReviews(dadosReviews);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-        if (notaGeral === 0) {
-            setErroValidacao("Selecione a nota geral de 1 a 5 estrelas.");
-            return;
-        }
+  useEffect(() => {
+    carregarDados();
+  }, [serviceId]);
 
-        if (notas.atendimento === 0 || notas.espera === 0 || notas.infraestrutura === 0) {
-            setErroValidacao("Avalie os 3 critérios objetivos (atendimento, espera e infraestrutura).");
-            return;
-        }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-        setErroValidacao(null);
-        setIsSubmitting(true);
-
-        try {
-            const payload = {
-                serviceId: id,
-                notaGeral,
-                notaAtendimento: notas.atendimento,
-                notaEspera: notas.espera,
-                notaInfraestrutura: notas.infraestrutura,
-                relato: relato.trim() ? relato.trim() : null,
-                isAnonimo,
-            };
-
-            const token = localStorage.getItem("token");
-            if (!token) {
-                setErroValidacao("Sessão expirada ou não iniciada. Por favor, faça login para avaliar.");
-                setIsSubmitting(false);
-                return;
-            }
-
-
-            const response = await fetch("http://localhost:3001/reviews", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error("Falha ao gravar avaliação");
-            }
-
-            setIsSubmitted(true);
-        } catch {
-            setErroValidacao("Erro ao conectar ao servidor. Verifique se o backend está a correr na porta 3001.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    if (isSubmitted) {
-        return (
-            <main className="mx-auto max-w-xl px-4 py-20 text-center">
-                <div className="rounded-3xl border border-border bg-surface p-10 shadow-elevated">
-                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-leaf-light text-leaf text-3xl">
-                        ✓
-                    </div>
-                    <span className="inline-block rounded-full bg-leaf-light px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-leaf">
-                        FeedPalmas • Manifestação Registrada
-                    </span>
-                    <h1 className="mt-4 text-3xl font-extrabold text-foreground">
-                        Avaliação Enviada com Sucesso!
-                    </h1>
-                    <p className="mt-3 text-sm text-foreground-muted leading-relaxed">
-                        Seu relato sobre a unidade <strong>{id}</strong> foi gravado no banco de dados e está disponível
-                        para consulta pública.
-                    </p>
-                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                        <Link
-                            href="/"
-                            className="inline-flex h-11 items-center justify-center rounded-xl bg-brand px-6 text-sm font-semibold text-brand-contrast hover:bg-brand-hover shadow-sm transition"
-                        >
-                            Voltar ao Início
-                        </Link>
-                        <Link
-                            href={`/servicos/${id}`}
-                            className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-foreground hover:bg-surface-muted transition"
-                        >
-                            Ver Painel da Unidade
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        );
+    if (!serviceId) {
+      alert("Identificador do posto inválido.");
+      return;
     }
 
+    const rawUser = localStorage.getItem("user");
+    if (!rawUser) {
+      alert("É necessário ter sessão iniciada para submeter uma avaliação.");
+      router.push("/login");
+      return;
+    }
+
+    if (!comentario.trim()) {
+      alert("Por favor, escreva um comentário sobre o atendimento.");
+      return;
+    }
+
+    const userData = JSON.parse(rawUser);
+
+    setEnviando(true);
+    try {
+      const res = await fetch("http://localhost:3001/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service_id: serviceId,
+          user_id: userData.id,
+          nota: Number(nota),
+          comentario,
+        }),
+      });
+
+      if (!res.ok) {
+        const erroJson = await res.json().catch(() => null);
+        throw new Error(erroJson?.message || "Falha ao registar a avaliação.");
+      }
+
+      setComentario("");
+      setNota(5);
+      alert("Avaliação registada com sucesso!");
+      await carregarDados();
+    } catch (err: any) {
+      alert(err.message || "Erro de ligação ao servidor.");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (carregando) {
     return (
-        <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-            <div className="mb-8">
-                <Link
-                    href={`/servicos/${id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand hover:text-brand-hover transition mb-3"
-                >
-                    ← Voltar à unidade
-                </Link>
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-brand-light px-3 py-0.5 text-xs font-bold text-brand">
-                        Guia Cidadão: FeedPalmas
-                    </span>
-                    <span className="text-xs font-medium text-foreground-muted">• Unidade: {id}</span>
-                </div>
-                <h1 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-                    Avaliação de Desempenho do Serviço
-                </h1>
-                <p className="mt-1 text-sm text-foreground-muted">
-                    Controle social e participação cidadã nos órgãos públicos de Palmas (TO).
-                </p>
-            </div>
-
-            {erroValidacao && (
-                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
-                    ⚠️ {erroValidacao}
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Nota Geral */}
-                <section className="rounded-3xl border border-border bg-surface p-6 sm:p-8 shadow-card">
-                    <label className="block text-base font-bold text-foreground mb-1">
-                        Nota Geral de Satisfação <span className="text-red-500">*</span>
-                    </label>
-                    <p className="text-xs text-foreground-muted mb-6">
-                        Classifique a sua experiência global de 1 a 5 estrelas.
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                            const active = (hoverGeral || notaGeral) >= star;
-                            return (
-                                <button
-                                    type="button"
-                                    key={star}
-                                    onClick={() => setNotaGeral(star)}
-                                    onMouseEnter={() => setHoverGeral(star)}
-                                    onMouseLeave={() => setHoverGeral(0)}
-                                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-3xl transition-all duration-150 transform hover:scale-105 focus:outline-none ${
-                                        active
-                                            ? "bg-sun-light border-amber-300 text-amber-500 shadow-sm"
-                                            : "bg-background border-border text-foreground-subtle hover:border-border-strong"
-                                    }`}
-                                    aria-label={`${star} estrelas`}
-                                >
-                                    ★
-                                </button>
-                            );
-                        })}
-
-                        <span className="ml-3 text-sm font-bold text-foreground">
-                            {notaGeral === 5 && "⭐ Excelente"}
-                            {notaGeral === 4 && "👍 Bom"}
-                            {notaGeral === 3 && "😐 Regular"}
-                            {notaGeral === 2 && "⚠️ Ruim"}
-                            {notaGeral === 1 && "🚫 Péssimo"}
-                        </span>
-                    </div>
-                </section>
-
-                {/* Critérios Oficiais */}
-                <section className="rounded-3xl border border-border bg-surface p-6 sm:p-8 shadow-card space-y-6">
-                    <div>
-                        <h2 className="text-base font-bold text-foreground">
-                            Critérios Objetivos Obrigatórios
-                        </h2>
-                        <p className="text-xs text-foreground-muted">
-                            Métricas quantitativas para o Painel de Transparência da cidade.
-                        </p>
-                    </div>
-
-                    <div className="space-y-4">
-                        {CRITERIOS_FEEDPALMAS.map((c) => (
-                            <div
-                                key={c.id}
-                                className="rounded-2xl border border-border bg-surface-subtle p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                            >
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">{c.icone}</span>
-                                        <span className="text-sm font-bold text-foreground">{c.label}</span>
-                                    </div>
-                                    <p className="mt-0.5 text-xs text-foreground-muted">{c.descricao}</p>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 w-full sm:w-56">
-                                    {[1, 2, 3, 4, 5].map((lvl) => {
-                                        const isSelected = notas[c.id] === lvl;
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={lvl}
-                                                onClick={() => handleNotaCriterio(c.id, lvl)}
-                                                className={`h-9 flex-1 rounded-xl text-xs font-bold border transition ${
-                                                    isSelected
-                                                        ? "bg-brand text-brand-contrast border-brand shadow-sm"
-                                                        : "bg-surface border-border text-foreground-muted hover:border-brand"
-                                                }`}
-                                            >
-                                                {lvl}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Relato Textual */}
-                <section className="rounded-3xl border border-border bg-surface p-6 sm:p-8 shadow-card space-y-4">
-                    <div>
-                        <label htmlFor={`${formId}-relato`} className="block text-base font-bold text-foreground">
-                            Relato Opinativo (Opcional)
-                        </label>
-                        <p className="text-xs text-foreground-muted">
-                            Conte detalhes do atendimento recebido. Comentários estão sujeitos a moderação comunitária.
-                        </p>
-                    </div>
-
-                    <textarea
-                        id={`${formId}-relato`}
-                        rows={4}
-                        value={relato}
-                        onChange={(e) => setRelato(e.target.value)}
-                        placeholder="Exemplo: Cheguei às 08h na unidade. A triagem foi ágil, porém a sala de espera estava sem assentos suficientes..."
-                        className="w-full rounded-2xl border border-border bg-background p-4 text-sm text-foreground placeholder:text-foreground-muted focus:border-brand focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
-                    />
-
-                    <div className="pt-2 border-t border-border">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={isAnonimo}
-                                onChange={(e) => setIsAnonimo(e.target.checked)}
-                                className="h-4 w-4 rounded border-border text-brand focus:ring-brand"
-                            />
-                            <span className="text-xs text-foreground-muted">
-                                <strong>Preservar privacidade:</strong> Exibir meu nome publicamente como <em>"Cidadão Anônimo"</em> (em conformidade com a LGPD).
-                            </span>
-                        </label>
-                    </div>
-                </section>
-
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full h-14 rounded-2xl bg-brand text-brand-contrast font-bold text-base shadow-elevated hover:bg-brand-hover active:scale-[0.99] disabled:opacity-50 transition"
-                >
-                    {isSubmitting ? "A enviar ao FeedPalmas..." : "Publicar Avaliação"}
-                </button>
-            </form>
-        </main>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm font-semibold text-slate-500">A carregar serviço municipal...</p>
+      </div>
     );
+  }
+
+  return (
+    <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="text-xs font-semibold text-sky-600 hover:underline"
+        >
+          ← Voltar à Página Principal
+        </Link>
+      </div>
+
+      {/* Cartão do Posto */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600">
+            {servico?.categoria || "Serviço Público"}
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-xl text-amber-500">★</span>
+            <span className="text-lg font-black text-slate-800">
+              {servico ? Number(servico.mediaNota).toFixed(1) : "5.0"}
+            </span>
+            <span className="text-xs text-slate-500">
+              ({servico?.totalAvaliacoes || 0} avaliações)
+            </span>
+          </div>
+        </div>
+
+        <h1 className="mt-2 text-2xl sm:text-3xl font-black text-slate-900">
+          {servico?.nome || "Posto Municipal"}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">{servico?.endereco}</p>
+      </div>
+
+      {/* Formulário de Avaliação */}
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+        <h2 className="text-xl font-bold text-slate-900">Deixar Avaliação Cidadã</h2>
+        <p className="text-xs text-slate-500 mt-1">
+          A sua avaliação apoia a fiscalização e a melhoria dos serviços públicos da cidade.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">
+              Classificação do Atendimento e Estrutura
+            </label>
+            <div className="flex gap-3">
+              {[1, 2, 3, 4, 5].map((estrela) => (
+                <button
+                  key={estrela}
+                  type="button"
+                  onClick={() => setNota(estrela)}
+                  className={`h-11 w-11 rounded-xl font-bold text-sm transition ${
+                    nota >= estrela
+                      ? "bg-amber-400 text-slate-900 shadow-sm"
+                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                  }`}
+                >
+                  ★ {estrela}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Comentário / Relato
+            </label>
+            <textarea
+              rows={4}
+              value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              placeholder="Descreva a sua experiência relativamente a filas, infraestrutura ou qualidade do atendimento..."
+              className="w-full rounded-2xl border border-slate-200 p-4 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={enviando}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-sky-600 px-6 text-sm font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
+          >
+            {enviando ? "A registar avaliação..." : "Submeter Avaliação"}
+          </button>
+        </form>
+      </section>
+
+      {/* Histórico de Comentários */}
+      <section className="mt-8 space-y-4">
+        <h3 className="text-lg font-bold text-slate-900">
+          Relatos da Comunidade ({reviews.length})
+        </h3>
+
+        {reviews.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-sm text-slate-500">
+            Nenhum relato registado até ao momento para este equipamento.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map((rev) => (
+              <div
+                key={rev.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-2"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">
+                    {rev.user?.nome || "Cidadão"}
+                  </span>
+                  <span className="text-amber-500 font-bold">
+                    {"★".repeat(rev.nota)}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  "{rev.comentario}"
+                </p>
+                <span className="block text-[11px] text-slate-400">
+                  {new Date(rev.created_at).toLocaleDateString("pt-BR")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }

@@ -1,39 +1,39 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { PublicService } from '../../services/entities/service.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('reviews')
 export class Review {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    serviceId: string;
+  @Column({ type: 'int' })
+  nota: number;
 
-    @Column('int')
-    notaGeral: number;
+  @Column({ type: 'text' })
+  comentario: string;
 
-    @Column('int')
-    notaAtendimento: number;
+  @ManyToOne(() => PublicService, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'service_id' })
+  service: PublicService;
 
-    @Column('int')
-    notaEspera: number;
+  @Column()
+  service_id: string;
 
-    @Column('int')
-    notaInfraestrutura: number;
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
-    @Column({ type: 'text', nullable: true })
-    relato: string;
+  @Column()
+  user_id: string;
 
-    @Column({ default: false })
-    isAnonimo: boolean;
-
-    @Column()
-    userId: string;
-
-    @ManyToOne(() => User)
-    @JoinColumn({ name: 'userId' })
-    user: User;
-
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 }
