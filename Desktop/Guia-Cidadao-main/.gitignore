@@ -1,0 +1,22 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Dependências
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Compilação e testes
+dist/
+coverage/
+
+# Logs
+npm-debug.log*

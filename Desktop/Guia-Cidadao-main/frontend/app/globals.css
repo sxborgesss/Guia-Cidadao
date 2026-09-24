@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------------------------- */
+/* 1. TOKENS DE DESIGN — TEMA DIURNO & ENSOLARADO                             */
+/* -------------------------------------------------------------------------- */
+:root {
+  /* Força a renderização em modo claro diurno */
+  color-scheme: light;
+
+  /* Superfícies & Fundo Luminoso */
+  --background: #f0f7ff;          /* Azul-céu muito ténue de fundo diurno */
+  --surface-card: #ffffff;        /* Branco puro para destacar cartões à luz do sol */
+  --surface-subtle: #f8fafc;      /* Base suave para blocos internos */
+  --surface-hover: #e0f2fe;       /* Realce em azul celeste suave */
+
+  /* Tipografia Suave Diurna (sem tons de preto pesado) */
+  --foreground: #1e293b;          /* Azul ardósia nítido e legível */
+  --foreground-muted: #64748b;    /* Texto de apoio claro */
+  --foreground-subtle: #94a3b8;   /* Detalhes e notas secundárias */
+
+  /* Linhas e Contornos Leves */
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+
+  /* Identidade Cívica: Azul Céu Aberto & Sol */
+  --brand-50: #f0f9ff;
+  --brand-100: #e0f2fe;
+  --brand-500: #0ea5e9;           /* Azul celeste vibrante */
+  --brand-600: #0284c7;           /* Cor de ação e botões principais */
+  --brand-700: #0369a1;           /* Interação de clique */
+  --brand-contrast: #ffffff;
+
+  /* Cores Vivas de Apoio Ensolarado */
+  --sun-gold: #f59e0b;            /* Amarelo dourado solar (estrelas e avisos) */
+  --sun-gold-light: #fef3c7;
+  --leaf-green: #10b981;          /* Verde folha / aprovação */
+  --leaf-green-light: #d1fae5;
+  --coral-soft: #f43f5e;          /* Coral claro para alertas sem agressividade */
+  --coral-soft-light: #ffe4e6;
+
+  /* Sombras Transparentes com Difusão de Luz Natural */
+  --elevation-day-1: 0 2px 4px 0 rgba(14, 165, 233, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  --elevation-day-2: 0 8px 20px -4px rgba(14, 165, 233, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --elevation-day-3: 0 16px 36px -6px rgba(14, 165, 233, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. REGISTO DOS TOKENS NO TAILWIND V4 (@theme)                              */
+/* -------------------------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface-card);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-brand: var(--brand-600);
+  --color-brand-hover: var(--brand-700);
+  --color-brand-light: var(--brand-50);
+  --color-brand-contrast: var(--brand-contrast);
+
+  --color-sun: var(--sun-gold);
+  --color-sun-light: var(--sun-gold-light);
+  --color-leaf: var(--leaf-green);
+  --color-leaf-light: var(--leaf-green-light);
+  --color-coral: var(--coral-soft);
+  --color-coral-light: var(--coral-soft-light);
+
+  --shadow-card: var(--elevation-day-1);
+  --shadow-elevated: var(--elevation-day-2);
+  --shadow-popover: var(--elevation-day-3);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. BASE TIPOGRÁFICA                                                        */
+/* -------------------------------------------------------------------------- */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--brand-100);
+  color: var(--brand-700);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
