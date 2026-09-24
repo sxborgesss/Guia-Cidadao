@@ -38,7 +38,7 @@ export default function PaginaRegisto() {
         try {
             // Aqui fará a integração com o seu backend NestJS (POST /auth/register)
 
-            const response = await fetch("http://localhost:3000/auth/register", {
+            const response = await fetch("http://localhost:3001/auth/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
