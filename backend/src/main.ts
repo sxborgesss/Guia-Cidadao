@@ -5,9 +5,8 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Permite que o frontend (porta 3000) faça pedidos ao backend
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3000',
     credentials: true,
   });
 
@@ -17,8 +16,7 @@ async function bootstrap() {
     }),
   );
 
-  // 2. Muda a porta do backend para 3001 para não chocar com o Next.js
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(3001);
 }
 
 void bootstrap();
