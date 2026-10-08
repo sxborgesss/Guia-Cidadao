@@ -27,7 +27,9 @@ export default function AdminPage() {
   const [carregando, setCarregando] = useState(true);
 
   // Estados de controle e dados
-  const [abaAtiva, setAbaAtiva] = useState<"servicos" | "feedbacks">("servicos");
+  const [abaAtiva, setAbaAtiva] = useState<"servicos" | "gestores" | "feedbacks">("servicos");
+  const [gestores, setGestores] = useState<UserData[]>([]);
+  const [carregandoGestores, setCarregandoGestores] = useState(false);
   const [servicos, setServicos] = useState<PublicService[]>([]);
   const [salvando, setSalvando] = useState(false);
 
@@ -35,6 +37,14 @@ export default function AdminPage() {
   const [nome, setNome] = useState("");
   const [categoria, setCategoria] = useState("saude");
   const [endereco, setEndereco] = useState("");
+
+  const [nomeGestor, setNomeGestor] = useState("");
+  const [emailGestor, setEmailGestor] = useState("");
+  const [senhaGestor, setSenhaGestor] = useState("");
+  const [confirmarSenhaGestor, setConfirmarSenhaGestor] = useState("");
+  const [cadastrandoGestor, setCadastrandoGestor] = useState(false);
+  const [erroGestor, setErroGestor] = useState<string | null>(null);
+  const [sucessoGestor, setSucessoGestor] = useState<string | null>(null);
 
   const carregarServicos = async () => {
     try {
@@ -47,6 +57,42 @@ export default function AdminPage() {
       console.error("Erro ao buscar serviços:", err);
     }
   };
+
+  const carregarGestores = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+          return;
+      }
+
+      setCarregandoGestores(true);
+
+      try {
+          const response = await fetch("http://localhost:3001/users/gestores", {
+              headers: {
+                  Authorization: `Bearer ${token}`,
+              },
+          });
+
+          if (!response.ok) {
+              throw new Error("Erro ao carregar gestores.");
+          }
+
+          const data = await response.json();
+
+          setGestores(data);
+      } catch (error) {
+          console.error("Erro ao carregar gestores:", error);
+      } finally {
+          setCarregandoGestores(false);
+      }
+  };
+
+  useEffect(() => {
+      if (abaAtiva === "gestores") {
+          carregarGestores();
+      }
+    }, [abaAtiva]);
 
   useEffect(() => {
     const rawUser = localStorage.getItem("user");
@@ -123,6 +169,72 @@ export default function AdminPage() {
     } catch (err) {
       alert("Erro ao conectar com o servidor.");
     }
+  };
+
+  const handleCadastrarGestor = async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      setErroGestor(null);
+      setSucessoGestor(null);
+
+      if (senhaGestor !== confirmarSenhaGestor) {
+          setErroGestor("As senhas não coincidem.");
+          return;
+      }
+
+      if (senhaGestor.length < 6) {
+          setErroGestor("A senha deve ter pelo menos 6 caracteres.");
+          return;
+      }
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+          setErroGestor("Sessão administrativa não encontrada.");
+          return;
+      }
+
+      setCadastrandoGestor(true);
+
+      try {
+          const response = await fetch(
+              "http://localhost:3001/auth/admin/users",
+              {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                      nome: nomeGestor,
+                      email: emailGestor,
+                      senha: senhaGestor,
+                      role: "GESTOR",
+                  }),
+              },
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+              const mensagem = Array.isArray(data.message)
+                  ? data.message.join(", ")
+                  : data.message || "Erro ao cadastrar gestor.";
+
+              throw new Error(mensagem);
+          }
+
+          setSucessoGestor("Gestor cadastrado com sucesso!");
+
+          setNomeGestor("");
+          setEmailGestor("");
+          setSenhaGestor("");
+          setConfirmarSenhaGestor("");
+      } catch (err: any) {
+          setErroGestor(err.message || "Erro ao cadastrar gestor.");
+      } finally {
+          setCadastrandoGestor(false);
+      }
   };
 
   if (carregando) {
@@ -202,6 +314,16 @@ export default function AdminPage() {
           }`}
         >
           Moderação de Avaliações
+        </button>
+        <button
+            onClick={() => setAbaAtiva("gestores")}
+            className={`border-b-2 px-4 py-2 text-sm font-semibold transition ${
+                abaAtiva === "gestores"
+                    ? "border-sky-600 text-sky-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+        >
+          Gestão de Gestores
         </button>
       </div>
 
@@ -302,6 +424,167 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+        {abaAtiva === "gestores" && (
+            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h2 className="mb-2 text-lg font-bold text-slate-800">
+                    Cadastrar Gestor
+                </h2>
+
+                <p className="mb-6 text-sm text-slate-500">
+                    Crie uma conta de gestor para administrar os serviços públicos e as
+                    avaliações.
+                </p>
+
+                {erroGestor && (
+                    <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                        {erroGestor}
+                    </div>
+                )}
+
+                {sucessoGestor && (
+                    <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
+                        {sucessoGestor}
+                    </div>
+                )}
+
+                <form
+                    onSubmit={handleCadastrarGestor}
+                    className="max-w-2xl space-y-5"
+                >
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-slate-700">
+                            Nome completo
+                        </label>
+
+                        <input
+                            type="text"
+                            value={nomeGestor}
+                            onChange={(e) => setNomeGestor(e.target.value)}
+                            placeholder="Digite o nome do gestor"
+                            required
+                            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-slate-700">
+                            E-mail
+                        </label>
+
+                        <input
+                            type="email"
+                            value={emailGestor}
+                            onChange={(e) => setEmailGestor(e.target.value)}
+                            placeholder="gestor@email.com"
+                            required
+                            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-slate-700">
+                            Senha
+                        </label>
+
+                        <input
+                            type="password"
+                            value={senhaGestor}
+                            onChange={(e) => setSenhaGestor(e.target.value)}
+                            placeholder="Mínimo de 6 caracteres"
+                            required
+                            minLength={6}
+                            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-slate-700">
+                            Confirmar senha
+                        </label>
+
+                        <input
+                            type="password"
+                            value={confirmarSenhaGestor}
+                            onChange={(e) => setConfirmarSenhaGestor(e.target.value)}
+                            placeholder="Digite a senha novamente"
+                            required
+                            minLength={6}
+                            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={cadastrandoGestor}
+                        className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {cadastrandoGestor
+                            ? "Cadastrando..."
+                            : "Cadastrar Gestor"}
+                    </button>
+                </form>
+                <div className="mt-10">
+                    <div className="mb-5">
+                        <h2 className="text-xl font-bold text-slate-800">
+                            Gestores cadastrados
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                            Usuários com permissão de gestão do sistema.
+                        </p>
+                    </div>
+
+                    {carregandoGestores ? (
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
+                            <p className="text-sm text-slate-500">
+                                Carregando gestores...
+                            </p>
+                        </div>
+                    ) : gestores.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                            <p className="font-medium text-slate-700">
+                                Nenhum gestor cadastrado.
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                                Cadastre um novo gestor utilizando o formulário acima.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {gestores.map((gestor) => (
+                                <div
+                                    key={gestor.id}
+                                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-lg font-bold text-sky-600">
+                                                {gestor.nome.charAt(0).toUpperCase()}
+                                            </div>
+
+                                            <div>
+                                                <h3 className="font-semibold text-slate-800">
+                                                    {gestor.nome}
+                                                </h3>
+
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {gestor.email}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-600">
+              GESTOR
+            </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
 
       {abaAtiva === "feedbacks" && (
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">

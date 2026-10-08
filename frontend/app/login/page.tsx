@@ -41,7 +41,13 @@ export default function PaginaLogin() {
                 localStorage.setItem("user", JSON.stringify(data.user));
             }
 
-            window.location.href = "/";
+            if (data.user?.role === "ADMIN") {
+                window.location.href = "/admin";
+            } else if (data.user?.role === "GESTOR") {
+                window.location.href = "/gestor";
+            } else {
+                window.location.href = "/";
+            }
         } catch (err: any) {
             setErro(err.message || "Ocorreu um erro ao tentar iniciar sessão. Tente novamente.");
         } finally {

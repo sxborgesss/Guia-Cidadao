@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -26,5 +26,24 @@ export class UsersService {
         return this.userRepository.findOne({
             where: { id },
         });
+    }
+    async listarGestores() {
+        const gestores = await this.userRepository.find({
+            where: {
+                role: UserRole.GESTOR,
+            },
+            order: {
+                nome: 'ASC',
+            },
+        });
+
+        return gestores.map((gestor) => ({
+            id: gestor.id,
+            nome: gestor.nome,
+            email: gestor.email,
+            role: gestor.role,
+            created_at: gestor.created_at,
+            updated_at: gestor.updated_at,
+        }));
     }
 }
