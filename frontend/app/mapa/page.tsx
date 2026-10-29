@@ -1,60 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MapaPalmas, { UnidadePublicaMapa } from "@/app/components/MapaPalmas";
-
-const UNIDADES_MOCK: UnidadePublicaMapa[] = [
-    {
-        id: "usf-403-norte",
-        name: "Unidade de Saúde da Família (USF) 403 Norte",
-        category: "Saúde",
-        esfera: "Municipal",
-        latitude: -10.1652,
-        longitude: -48.3308,
-        averageRating: 4.2,
-    },
-    {
-        id: "hgp-central",
-        name: "Hospital Geral de Palmas (HGP)",
-        category: "Saúde",
-        esfera: "Estadual",
-        latitude: -10.1989,
-        longitude: -48.3189,
-        averageRating: 3.1,
-    },
-    {
-        id: "ifto-palmas",
-        name: "Instituto Federal do Tocantins (IFTO) - Campus Palmas",
-        category: "Educação",
-        esfera: "Federal",
-        latitude: -10.2001,
-        longitude: -48.3615,
-        averageRating: 4.8,
-    },
-    {
-        id: "estacao-araguaia",
-        name: "Estação de Integração de Ônibus Araguaia",
-        category: "Transporte",
-        esfera: "Municipal",
-        latitude: -10.2220,
-        longitude: -48.3330,
-        averageRating: 3.4,
-    },
-];
 
 export default function PaginaServicosComMapa() {
     const [esferaFiltro, setEsferaFiltro] = useState<string>("TODAS");
+    const [unidades, setUnidades] = useState<UnidadePublicaMapa[]>([]);
+    const [carregando, setCarregando] = useState<boolean>(true);
 
-    const unidadesFiltradas = UNIDADES_MOCK.filter((u) =>
+    useEffect(() => {
+        // Substitua pelo URL base correto da sua API em produção, se necessário
+        fetch("http://localhost:3001/services")
+            .then((resposta) => resposta.json())
+            .then((dados) => {
+                // Mapeamento das colunas do banco (PublicService) para as propriedades do mapa
+                const unidadesMapeadas: UnidadePublicaMapa[] = dados.map((item: any) => {
+
+                    // Formata a categoria do banco para o padrão visual do mapa
+                    let categoriaFormatada = "Infraestrutura";
+                    if (item.categoria === 'saude') categoriaFormatada = "Saúde";
+                    if (item.categoria === 'educacao') categoriaFormatada = "Educação";
+                    if (item.categoria === 'transporte') categoriaFormatada = "Transporte";
+
+                    return {
+                        id: item.id,
+                        name: item.nome,
+                        category: categoriaFormatada as any,
+                        esfera: item.esfera || "Municipal", // Fallback caso a coluna esfera ainda não exista no banco
+                        latitude: Number(item.latitude),
+                        longitude: Number(item.longitude),
+                        averageRating: Number(item.mediaNota),
+                    };
+                });
+                setUnidades(unidadesMapeadas);
+            })
+            .catch((erro) => console.error("Erro ao buscar as unidades:", erro))
+            .finally(() => setCarregando(false));
+    }, []);
+
+    const unidadesFiltradas = unidades.filter((u) =>
         esferaFiltro === "TODAS" ? true : u.esfera.toUpperCase() === esferaFiltro
     );
 
     return (
         <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 space-y-8">
             <div>
-        <span className="text-xs font-bold uppercase tracking-wider text-sky-700">
-          Geolocalização Cívica
-        </span>
+                <span className="text-xs font-bold uppercase tracking-wider text-sky-700">
+                  Geolocalização Cívica
+                </span>
                 <h1 className="mt-1 text-3xl font-extrabold text-slate-900">
                     Postos e Unidades em Palmas (TO)
                 </h1>
@@ -63,7 +56,7 @@ export default function PaginaServicosComMapa() {
                 </p>
             </div>
 
-            {/* Filtros por Esfera Governamental (RF01) */}
+            {/* Filtros por Esfera Governamental */}
             <div className="flex flex-wrap gap-2">
                 {["TODAS", "MUNICIPAL", "ESTADUAL", "FEDERAL"].map((esfera) => (
                     <button
@@ -80,8 +73,17 @@ export default function PaginaServicosComMapa() {
                 ))}
             </div>
 
-            {/* Mapa Interativo OpenStreetMap (RF02) */}
-            <MapaPalmas unidades={unidadesFiltradas} />
+            {/* Renderização condicional do Mapa ou do Loading */}
+            {carregando ? (
+                <div className="flex h-[480px] w-full items-center justify-center rounded-3xl border border-sky-100 bg-white text-sm text-slate-500 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-600 border-t-transparent" />
+                        A carregar unidades da base de dados...
+                    </div>
+                </div>
+            ) : (
+                <MapaPalmas unidades={unidadesFiltradas} />
+            )}
         </main>
     );
 }
