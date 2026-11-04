@@ -1,10 +1,14 @@
+
 import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
     CreateDateColumn,
     UpdateDateColumn,
+    ManyToMany,
 } from 'typeorm';
+
+import { PublicService } from '../../services/entities/service.entity';
 
 export enum UserRole {
     CIDADAO = 'CIDADAO',
@@ -32,6 +36,12 @@ export class User {
         default: UserRole.CIDADAO,
     })
     role: UserRole;
+
+    @ManyToMany(
+        () => PublicService,
+        (servico) => servico.gestores,
+    )
+    servicosGerenciados: PublicService[];
 
     @CreateDateColumn()
     created_at: Date;

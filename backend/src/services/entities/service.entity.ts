@@ -1,10 +1,15 @@
+
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
+
+import { User } from '../../users/entities/user.entity';
 
 export enum ServiceCategory {
   SAUDE = 'saude',
@@ -45,6 +50,23 @@ export class PublicService {
 
   @Column({ type: 'int', default: 0 })
   totalAvaliacoes: number;
+
+  @ManyToMany(
+    () => User,
+    (gestor) => gestor.servicosGerenciados,
+  )
+  @JoinTable({
+    name: 'gestores_servicos',
+    joinColumn: {
+      name: 'service_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'gestor_id',
+      referencedColumnName: 'id',
+    },
+  })
+  gestores: User[];
 
   @CreateDateColumn()
   created_at: Date;

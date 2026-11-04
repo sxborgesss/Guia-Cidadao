@@ -1,164 +1,217 @@
-# FeedPalmas — Guia Cidadão
+# Guia Cidadão (FeedPalmas)
 
-**Sistema de avaliação e feedback dos serviços públicos de Palmas – TO**
+**Plataforma de consulta, avaliação e acompanhamento de serviços públicos de Palmas – TO.**
 
-O **FeedPalmas** é um projeto de extensão desenvolvido no curso de Sistemas para Internet, com o objetivo de aproximar os cidadãos dos serviços públicos de Palmas, Tocantins, por meio da tecnologia.
+O Guia Cidadão é um projeto de extensão do curso de **Sistemas para Internet**, do Instituto Federal do Tocantins (IFTO), Campus Palmas. A proposta é aproximar cidadãos e serviços públicos municipais por meio de uma aplicação web que reúne informações sobre os serviços e permite registrar avaliações. A plataforma também oferece recursos administrativos e uma área para gestores acompanharem e responderem às avaliações dos serviços sob sua responsabilidade.
 
-A aplicação busca facilitar o acesso a informações sobre serviços públicos e apoiar a participação cidadã, promovendo maior transparência e contribuindo para a melhoria da qualidade do atendimento oferecido à população.
-
-## Objetivos do projeto
+## Objetivos
 
 - Facilitar o acesso a informações sobre serviços públicos de Palmas.
-- Incentivar a participação dos cidadãos na avaliação dos serviços públicos.
-- Contribuir para a transparência e a melhoria contínua do atendimento público.
-- Desenvolver uma aplicação web organizada, responsiva e com controle de acesso por perfil de usuário.
+- Disponibilizar um canal de avaliação e manifestação dos cidadãos.
+- Permitir que gestores acompanhem avaliações dos serviços vinculados às suas contas.
+- Apoiar a transparência e a melhoria contínua do atendimento público.
 
-## Funcionalidades implementadas
+## Funcionalidades
 
-- **Autenticação:** cadastro e login de usuários.
-- **Controle de acesso:** permissões de acordo com os perfis de cidadão, gestor e administrador.
-- **Gerenciamento de gestores:** cadastro e consulta de gestores pelo administrador.
-- **Mapas:** visualização da localização dos serviços públicos.
+### Implementadas no backend
 
-O projeto continua em desenvolvimento. As funcionalidades serão documentadas como concluídas à medida que forem implementadas e testadas.
+- Cadastro de cidadãos e autenticação por e-mail e senha.
+- Senhas armazenadas com hash bcrypt.
+- Autenticação JWT e controle de acesso por perfil: `CIDADAO`, `GESTOR` e `ADMIN`.
+- Criação de usuários (incluindo gestores) por um administrador autenticado.
+- Consulta pública dos serviços cadastrados.
+- Cadastro e exclusão de serviços restritos ao perfil `ADMIN`.
+- Criação de avaliações com identificação do cidadão obtida a partir do JWT.
+- Consulta pública de avaliações com seleção limitada dos dados do autor.
+- Associação muitos-para-muitos entre gestores e serviços: um gestor pode administrar vários serviços e um serviço pode ter vários gestores.
+- Consulta das avaliações dos serviços vinculados ao gestor autenticado.
+- Respostas institucionais: gestores vinculados podem responder às avaliações dos seus serviços. Cada avaliação pode ter uma resposta.
+- Consulta pública das avaliações incluindo a resposta institucional, quando existir.
 
-## Tecnologias utilizadas
+### Interface web disponível
 
-### Frontend
-- React
-- Next.js
-- TypeScript
-- Tailwind CSS
-- Leaflet e React Leaflet
+- Página inicial e catálogo de serviços.
+- Visualização de serviços em mapa.
+- Cadastro e login.
+- Área administrativa para gerenciamento de serviços e gestores.
+- Painel do gestor com consulta de avaliações e indicadores básicos calculados a partir das avaliações recebidas.
 
-### Backend
-- Node.js
-- NestJS
-- TypeScript
-- TypeORM
-- JWT para autenticação
-- bcrypt para proteção de senhas
+### Em desenvolvimento / ainda não concluído
 
-### Banco de dados
-- PostgreSQL
+- Integração visual completa das respostas institucionais na página pública do serviço.
+- Indicadores adicionais do gestor, incluindo total de avaliações respondidas e não respondidas e detalhamento por critérios.
+- Escolha de anonimato pelo cidadão na avaliação.
+- Denúncia de avaliações e fluxo de moderação pelo administrador.
+- Painel público de transparência com indicadores consolidados.
+- Revisão final de acessibilidade, responsividade, segurança e testes de ponta a ponta.
 
-### Ferramentas
-- Git
-- GitHub
+> A presença de uma rota ou componente no código não significa, por si só, que o fluxo completo já foi validado em todos os perfis. As funcionalidades devem ser testadas no ambiente local antes de uma apresentação ou implantação.
 
-## Estrutura do projeto
+## Tecnologias
 
-O repositório está organizado em duas partes principais:
+| Camada | Tecnologias |
+|---|---|
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Mapas | Leaflet e React Leaflet |
+| Backend | Node.js, NestJS e TypeScript |
+| ORM | TypeORM |
+| Banco de dados | PostgreSQL |
+| Autenticação | Passport, JWT e bcrypt |
+| Versionamento | Git e GitHub |
 
-- `frontend/`: aplicação web e interface do usuário.
-- `backend/`: API responsável pelas regras de negócio, autenticação e acesso aos dados.
+## Estrutura do repositório
+
+```text
+Guia-Cidadao/
+├── backend/       # API NestJS, regras de negócio e acesso ao banco
+├── frontend/      # Aplicação web Next.js
+├── README.md      # Documentação principal
+└── .gitignore
+```
 
 ## Pré-requisitos
 
-Antes de executar o projeto, é necessário ter instalado:
+- Node.js e npm instalados.
+- PostgreSQL em execução e acessível pela máquina que executará o backend.
+- Git para clonar e versionar o projeto.
 
-- **Node.js:** ambiente de execução do JavaScript.
-- **npm:** gerenciador de pacotes instalado com o Node.js.
-- **PostgreSQL:** sistema de gerenciamento do banco de dados.
-- **Git:** ferramenta para obter o código-fonte do repositório.
+O repositório não inclui um arquivo `docker-compose.yml`. O PostgreSQL pode ser executado por uma instalação local ou por um container Docker já configurado, desde que a porta e as credenciais correspondam às variáveis do backend.
 
-## Configuração do banco de dados
+## Configuração do banco e do backend
 
-1. Inicie o PostgreSQL.
-2. Crie um banco de dados chamado `guia_cidadao`.
-3. Configure as variáveis de ambiente utilizadas pelo backend.
-
-Na pasta `backend/`, crie um arquivo chamado `.env` com o seguinte conteúdo de exemplo:
+1. Inicie uma instância do PostgreSQL.
+2. Crie um banco chamado `guia_cidadao` (caso ainda não exista).
+3. Na pasta `backend/`, crie um arquivo `.env` com as variáveis abaixo:
 
 ```env
-DB_HOST=localhost
+PORT=3001
+DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_USERNAME=postgres
-DB_PASSWORD=sua_senha
+DB_PASSWORD=coloque_sua_senha_local
 DB_DATABASE=guia_cidadao
+JWT_SECRET=gere_uma_chave_secreta_forte
 ```
 
-Substitua `sua_senha` pela senha configurada no seu PostgreSQL. Ajuste também a porta caso sua instalação utilize uma diferente da porta padrão `5432`.
+Ajuste `DB_HOST`, `DB_PORT`, `DB_USERNAME` e `DB_PASSWORD` conforme a sua instalação do PostgreSQL. `JWT_SECRET` deve ser uma chave forte, privada e mantida igual entre a emissão e a validação dos tokens.
 
-**Importante:** o arquivo `.env` contém configurações locais e não deve ser enviado ao GitHub com senhas reais.
+**Não compartilhe nem envie o arquivo `.env` ao GitHub.** Cada integrante deve criar seu próprio arquivo local. Não use a chave de exemplo em ambiente de produção.
+
+### Banco de dados e sincronização
+
+A configuração atual do TypeORM utiliza `synchronize: true`, que cria ou ajusta estruturas de tabelas automaticamente durante a inicialização. Essa configuração facilita o desenvolvimento, mas pode causar alterações no esquema do banco. Use apenas em ambiente de desenvolvimento; antes de produção, desative-a e adote migrations revisadas e versionadas.
+
+O projeto não inclui um script de seed para criação do primeiro usuário `ADMIN`. O endpoint de criação administrativa exige que já exista um administrador autenticado. A equipe deve combinar e documentar um procedimento seguro de criação inicial desse usuário no ambiente de desenvolvimento.
 
 ## Instalação e execução
 
-### 1. Obter o projeto
+Execute os comandos em **dois terminais separados**. O banco deve estar ativo antes de iniciar o backend.
 
-Clone o repositório e entre na pasta do projeto:
+### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/sxborgesss/Guia-Cidadao.git
 cd Guia-Cidadao
 ```
 
-### 2. Instalar as dependências do backend
+### 2. Instalar e iniciar o backend
 
-Abra um terminal na pasta raiz do projeto e execute:
+No primeiro terminal:
 
 ```bash
 cd backend
 npm install
-```
-
-### 3. Iniciar o backend
-
-Ainda na pasta `backend/`, execute:
-
-```bash
 npm run start:dev
 ```
 
-O backend ficará disponível em:
+A API ficará disponível em `http://localhost:3001` (ou na porta definida em `PORT`). Mantenha o terminal aberto.
 
-`http://localhost:3001`
+### 3. Instalar e iniciar o frontend
 
-Mantenha esse terminal aberto enquanto utilizar a aplicação.
-
-### 4. Instalar as dependências do frontend
-
-Abra um segundo terminal, na pasta raiz do projeto, e execute:
+No segundo terminal, a partir da pasta raiz do repositório:
 
 ```bash
 cd frontend
 npm install
-```
-
-### 5. Iniciar o frontend
-
-Na pasta `frontend/`, execute:
-
-```bash
 npm run dev
 ```
 
-A aplicação web ficará disponível em:
+A aplicação web ficará disponível em `http://localhost:3000`.
 
-`http://localhost:3000`
+Atualmente, as chamadas do frontend à API utilizam `http://localhost:3001`. Se o backend for executado em outro endereço ou porta, será necessário ajustar os endereços utilizados pelo frontend e a configuração de CORS em `backend/src/main.ts`.
 
-### 6. Acessar a aplicação
+## Principais rotas da API
 
-Com o banco de dados e os dois servidores em execução, abra o navegador e acesse:
+As rotas abaixo refletem os controllers atuais do backend. As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
-`http://localhost:3000`
+### Autenticação — `/auth`
 
-## Observações
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| POST | `/auth/register` | Público | Cadastra um cidadão (`CIDADAO`). |
+| POST | `/auth/login` | Público | Autentica e retorna token JWT e dados básicos do usuário. |
+| GET | `/auth/profile` | ADMIN | Exemplo de rota protegida para administrador. |
+| POST | `/auth/admin/users` | ADMIN | Cadastra usuário com perfil definido no DTO, incluindo gestor. |
 
-- O banco de dados deve estar em execução antes de iniciar o backend.
-- As configurações de conexão devem corresponder à instalação local do PostgreSQL.
-- O projeto utiliza `synchronize: true` na configuração do TypeORM. Essa opção pode criar ou ajustar tabelas automaticamente e deve ser avaliada com cuidado antes de utilizar o sistema em produção.
-- A chave JWT atualmente configurada no código é temporária e deve ser substituída por uma configuração segura por variável de ambiente antes de uma implantação em produção.
+### Serviços — `/services`
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/services` | Público | Lista serviços públicos. |
+| POST | `/services` | ADMIN | Cadastra um serviço. |
+| DELETE | `/services/:id` | ADMIN | Exclui um serviço. |
+
+### Usuários e vínculos — `/users`
+
+Todas as rotas deste controller exigem autenticação e perfil `ADMIN`.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/users/gestores` | Lista gestores cadastrados. |
+| GET | `/users/gestores/:gestorId/servicos` | Lista serviços vinculados ao gestor. |
+| POST | `/users/gestores/:gestorId/servicos/:serviceId` | Vincula gestor a um serviço. |
+| DELETE | `/users/gestores/:gestorId/servicos/:serviceId` | Desvincula gestor de um serviço. |
+
+### Avaliações e respostas — `/reviews`
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| POST | `/reviews` | JWT | Cria avaliação. O usuário é identificado pelo token; não envie `user_id` como fonte de identidade. |
+| GET | `/reviews/service/:serviceId` | Público | Lista avaliações do serviço e resposta institucional, quando houver. |
+| GET | `/reviews/gestor/minhas` | GESTOR | Lista avaliações dos serviços vinculados ao gestor autenticado. |
+| POST | `/reviews/:reviewId/responder` | GESTOR | Registra resposta institucional, se o gestor estiver vinculado ao serviço da avaliação. |
+
+## Testes e verificações
+
+Na pasta `backend/`, estão disponíveis os scripts definidos no `package.json`:
+
+```bash
+npm run build
+npm run test
+npm run test:e2e
+```
+
+Na pasta `frontend/`:
+
+```bash
+npm run build
+npm run lint
+```
+
+Além da compilação, teste os fluxos com contas separadas de `ADMIN`, `GESTOR` e `CIDADAO`, verificando especialmente autenticação, autorização, vínculos gestor-serviço, criação de avaliações e respostas institucionais.
+
+## Segurança e colaboração
+
+- Não faça commit de `.env`, senhas, tokens, chaves privadas ou dados reais de usuários.
+- Cada integrante deve manter suas próprias credenciais locais.
+- Antes de compartilhar alterações, revise `git status` e confirme que arquivos de ambiente e diretórios gerados estão ignorados.
+- Faça commits pequenos e descritivos, preferencialmente em branches de trabalho, e integre as alterações após revisão do grupo.
 
 ## Contexto acadêmico
 
-O FeedPalmas é desenvolvido como um projeto de extensão do curso de **Sistemas para Internet**, no Instituto Federal do Tocantins (IFTO), Campus Palmas.
+O Guia Cidadão (também referido como FeedPalmas em materiais anteriores) é desenvolvido como projeto de extensão do curso de **Sistemas para Internet**, no Instituto Federal do Tocantins (IFTO), Campus Palmas. A proposta relaciona o desenvolvimento de aplicações web a uma necessidade social: facilitar o acesso a informações e a participação dos cidadãos em assuntos relacionados aos serviços públicos municipais.
 
-A proposta relaciona o desenvolvimento de aplicações web a uma necessidade social: facilitar o acesso dos cidadãos às informações e aos canais de participação relacionados aos serviços públicos municipais.
-
-Além do desenvolvimento técnico, o projeto permite aplicar conhecimentos de programação, banco de dados, autenticação, organização de sistemas e trabalho colaborativo com controle de versão.
-
-## Equipe do projeto
+## Equipe
 
 - **João Rafael Gomes Manchola Cifuentes**
 - **Leandro Ribeiro da Silva**
@@ -166,23 +219,6 @@ Além do desenvolvimento técnico, o projeto permite aplicar conhecimentos de pr
 
 **Professor responsável:** Rodrigo Luiz dos Santos.
 
-## Contribuições no desenvolvimento
+---
 
-O desenvolvimento envolve atividades de planejamento, implementação e integração dos componentes da aplicação.
-
-Entre as atividades técnicas realizadas no projeto estão:
-
-- Desenvolvimento da interface web;
-- Implementação de funcionalidades no backend;
-- Integração com o banco de dados PostgreSQL;
-- Implementação de autenticação e controle de acesso por perfil;
-- Organização e versionamento do código-fonte com Git e GitHub;
-- Desenvolvimento de funcionalidades relacionadas à localização dos serviços públicos.
-
-O trabalho é realizado de forma colaborativa, com o objetivo de integrar os diferentes componentes da aplicação.
-
-## Situação do projeto
-
-O FeedPalmas encontra-se em desenvolvimento. O README será atualizado conforme novas funcionalidades forem concluídas e testadas.
-
-A documentação também poderá evoluir para incluir capturas de tela da aplicação, detalhes das rotas da API, exemplos de uso e informações adicionais sobre a arquitetura do sistema.
+O projeto permanece em desenvolvimento. Esta documentação descreve a estrutura e os endpoints encontrados no código-fonte desta versão; funcionalidades em desenvolvimento devem ser validadas e documentadas à medida que forem concluídas.
