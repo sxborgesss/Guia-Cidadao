@@ -37,6 +37,7 @@ export default function AvaliarPage() {
   const [nota, setNota] = useState(5);
   const [comentario, setComentario] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [isAnonimo, setIsAnonimo] = useState(false);
 
   const carregarDados = async () => {
     if (!serviceId) return;
@@ -90,16 +91,22 @@ export default function AvaliarPage() {
 
     setEnviando(true);
     try {
-      const res = await fetch("http://localhost:3001/reviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            throw new Error("Sessão expirada. Faça login novamente.");
+        }
+        const res = await fetch("http://localhost:3001/reviews", {
+            method: "POST",
+              headers: {
+                "Content-Type": "application/json", "Authorization": `Bearer ${token}`,
+              },
         body: JSON.stringify({
           service_id: serviceId,
           user_id: userData.id,
           nota: Number(nota),
           comentario,
+          isAnonimo,
         }),
       });
 
@@ -110,6 +117,7 @@ export default function AvaliarPage() {
 
       setComentario("");
       setNota(5);
+      setIsAnonimo(false);
       alert("Avaliação registada com sucesso!");
       await carregarDados();
     } catch (err: any) {
@@ -204,6 +212,27 @@ export default function AvaliarPage() {
               required
             />
           </div>
+
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <input
+                    id="isAnonimo"
+                    type="checkbox"
+                    checked={isAnonimo}
+                    onChange={(e) => setIsAnonimo(e.target.checked)}
+                    className="mt-1 h-4 w-4 cursor-pointer accent-sky-600"
+                />
+
+                <label htmlFor="isAnonimo" className="cursor-pointer">
+                    <span className="block text-sm font-bold text-slate-800">
+                      Publicar avaliação anonimamente
+                    </span>
+
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Seu nome não será exibido publicamente, mas continuará
+                      vinculado à avaliação para fins de segurança e moderação.
+                    </span>
+                </label>
+            </div>
 
           <button
             type="submit"

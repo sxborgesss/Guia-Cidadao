@@ -24,6 +24,9 @@ export class Review {
     @Column({ type: 'text' })
     comentario: string;
 
+    @Column({ default: false })
+    isAnonimo: boolean;
+
     @ManyToOne(() => PublicService, {
         onDelete: 'CASCADE',
     })

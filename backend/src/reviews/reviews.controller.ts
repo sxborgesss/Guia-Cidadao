@@ -36,6 +36,7 @@ export class ReviewsController {
         const serviceId = body.service_id || body.serviceId;
         const nota = Number(body.nota);
         const comentario = body.comentario;
+        const isAnonimo = body.isAnonimo === true;
 
         const userId = request.user.id;
 
@@ -44,6 +45,7 @@ export class ReviewsController {
                 nota,
                 comentario,
                 service_id: serviceId,
+                isAnonimo,
             },
             userId,
         );

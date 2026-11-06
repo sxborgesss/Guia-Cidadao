@@ -18,6 +18,7 @@ export class CreateReviewDto {
     nota: number;
     comentario: string;
     service_id: string;
+    isAnonimo?: boolean;
 }
 
 @Injectable()
@@ -50,6 +51,7 @@ export class ReviewsService {
         const novaReview = this.reviewRepository.create({
             nota: dto.nota,
             comentario: dto.comentario,
+            isAnonimo: dto.isAnonimo ?? false,
             service_id: dto.service_id,
             user_id: userId,
         });
@@ -82,8 +84,8 @@ export class ReviewsService {
     }
 
     // Consulta pública com dados limitados e resposta institucional.
-    async findByService(serviceId: string): Promise<Review[]> {
-        return this.reviewRepository
+    async findByService(serviceId: string) {
+        const reviews = await this.reviewRepository
             .createQueryBuilder('review')
             .leftJoin('review.user', 'user')
             .leftJoin(
@@ -95,6 +97,7 @@ export class ReviewsService {
                 'review.nota',
                 'review.comentario',
                 'review.created_at',
+                'review.isAnonimo',
 
                 'user.id',
                 'user.nome',
@@ -108,6 +111,13 @@ export class ReviewsService {
             })
             .orderBy('review.created_at', 'DESC')
             .getMany();
+
+        return reviews.map((review) => ({
+            ...review,
+            user: review.isAnonimo
+                ? { nome: 'Cidadão anônimo' }
+                : { nome: review.user?.nome || 'Cidadão' },
+        }));
     }
 
     async findByGestor(gestorId: string): Promise<Review[]> {

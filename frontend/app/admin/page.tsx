@@ -131,10 +131,17 @@ export default function AdminPage() {
 
         setSalvando(true);
         try {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error("Sessão expirada. Faça login novamente.");
+            }
+
             const res = await fetch("http://localhost:3001/services", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
                 },
                 // Adicionamos os novos campos ao body. Convertemos lat/lng para números ou enviamos undefined.
                 body: JSON.stringify({
