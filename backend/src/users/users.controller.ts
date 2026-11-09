@@ -6,6 +6,7 @@ import {
     Delete,
     Param,
     UseGuards,
+    Req,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
@@ -26,6 +27,15 @@ export class UsersController {
     @Roles('ADMIN')
     async listarGestores() {
         return this.usersService.listarGestores();
+    }
+
+    // Listar os serviços do próprio gestor autenticado
+    @Get('gestor/meus-servicos')
+    @Roles('GESTOR')
+    async listarMeusServicos(@Req() request: any) {
+        return this.usersService.listarServicosDoGestor(
+            request.user.id,
+        );
     }
 
     // Listar os serviços vinculados a um gestor

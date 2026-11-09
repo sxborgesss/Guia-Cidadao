@@ -5,7 +5,9 @@ import { PassportModule } from '@nestjs/passport';
 
 import { Review } from './entities/review.entity';
 import { ReviewResponse } from './entities/review-response.entity';
+import { ReviewReport } from './entities/review-report.entity';
 import { PublicService } from '../services/entities/service.entity';
+
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
 
@@ -15,6 +17,7 @@ import { ReviewsController } from './reviews.controller';
         TypeOrmModule.forFeature([
             Review,
             ReviewResponse,
+            ReviewReport,
             PublicService,
         ]),
     ],

@@ -5,6 +5,8 @@ import {
     Get,
     Param,
     Post,
+    Patch,
+    Delete,
     Req,
     UseGuards,
     ForbiddenException,
@@ -26,7 +28,7 @@ export class ReviewsController {
         private readonly reviewsService: ReviewsService,
     ) {}
 
-    // Criar avaliação usando a identidade do JWT
+    // Criar avaliação usando a identidade do JWT.
     @Post()
     @UseGuards(JwtAuthGuard)
     async criar(
@@ -51,7 +53,7 @@ export class ReviewsController {
         );
     }
 
-    // Consultar avaliações públicas de um serviço
+    // Consultar avaliações públicas de um serviço.
     @Get('service/:serviceId')
     async listarPorServico(
         @Param('serviceId') serviceId: string,
@@ -59,7 +61,7 @@ export class ReviewsController {
         return this.reviewsService.findByService(serviceId);
     }
 
-    // Consultar avaliações dos serviços do gestor autenticado
+    // Consultar avaliações dos serviços do gestor autenticado.
     @Get('gestor/minhas')
     @UseGuards(JwtAuthGuard)
     async listarAvaliacoesDoGestor(
@@ -76,7 +78,7 @@ export class ReviewsController {
         );
     }
 
-    // Responder oficialmente a uma avaliação
+    // Responder oficialmente a uma avaliação.
     @Post(':reviewId/responder')
     @UseGuards(JwtAuthGuard)
     async responderAvaliacao(
@@ -94,6 +96,95 @@ export class ReviewsController {
             reviewId,
             request.user.id,
             resposta,
+        );
+    }
+
+    // Cidadão denuncia uma avaliação.
+    @Post(':reviewId/denunciar')
+    @UseGuards(JwtAuthGuard)
+    async denunciarAvaliacao(
+        @Param('reviewId') reviewId: string,
+        @Body('motivo') motivo: string,
+        @Body('descricao') descricao: string,
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'CIDADAO') {
+            throw new ForbiddenException(
+                'Apenas cidadãos podem denunciar avaliações.',
+            );
+        }
+
+        return this.reviewsService.denunciarAvaliacao(
+            reviewId,
+            request.user.id,
+            motivo,
+            descricao,
+        );
+    }
+
+    // Listar todas as avaliações para moderação administrativa.
+    @Get('admin/todas')
+    @UseGuards(JwtAuthGuard)
+    async listarTodasParaAdmin(
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'ADMIN') {
+            throw new ForbiddenException(
+                'Apenas administradores podem consultar todas as avaliações.',
+            );
+        }
+
+        return this.reviewsService.findAllForAdmin();
+    }
+
+    // Remover uma avaliação inadequada.
+    @Delete('admin/:reviewId')
+    @UseGuards(JwtAuthGuard)
+    async removerAvaliacao(
+        @Param('reviewId') reviewId: string,
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'ADMIN') {
+            throw new ForbiddenException(
+                'Apenas administradores podem remover avaliações.',
+            );
+        }
+
+        return this.reviewsService.removerAvaliacao(reviewId);
+    }
+
+    // Consultar denúncias para análise administrativa.
+    @Get('admin/denuncias')
+    @UseGuards(JwtAuthGuard)
+    async listarDenuncias(
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'ADMIN') {
+            throw new ForbiddenException(
+                'Apenas administradores podem consultar denúncias.',
+            );
+        }
+
+        return this.reviewsService.findReportsForAdmin();
+    }
+
+    // Atualizar o status de uma denúncia.
+    @Patch('admin/denuncias/:reportId/status')
+    @UseGuards(JwtAuthGuard)
+    async atualizarStatusDenuncia(
+        @Param('reportId') reportId: string,
+        @Body('status') status: string,
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'ADMIN') {
+            throw new ForbiddenException(
+                'Apenas administradores podem atualizar denúncias.',
+            );
+        }
+
+        return this.reviewsService.atualizarStatusDenuncia(
+            reportId,
+            status,
         );
     }
 }

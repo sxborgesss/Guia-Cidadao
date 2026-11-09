@@ -1,38 +1,40 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { User } from './users/entities/user.entity';
+
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ServicesModule } from './services/services.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { OuvidoriaModule } from './ouvidoria/ouvidoria.module';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
 
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
+        TypeOrmModule.forRoot({
+            type: 'postgres',
+            host: process.env.DB_HOST,
+            port: Number(process.env.DB_PORT),
+            username: process.env.DB_USERNAME,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_DATABASE,
+            autoLoadEntities: true,
+            synchronize: true,
+        }),
 
-      autoLoadEntities: true,
-      synchronize: true,
-    }),
-    UsersModule,
-    AuthModule,
-    ServicesModule,
-    ReviewsModule,
-  ],
-
-  controllers: [AppController],
-  providers: [AppService],
+        UsersModule,
+        AuthModule,
+        ServicesModule,
+        ReviewsModule,
+        OuvidoriaModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}
