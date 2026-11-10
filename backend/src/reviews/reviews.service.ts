@@ -127,6 +127,37 @@ export class ReviewsService {
         }));
     }
 
+
+    // Consulta as avaliações feitas pelo próprio cidadão.
+    async findByUser(userId: string) {
+        const reviews = await this.reviewRepository
+            .createQueryBuilder('review')
+            .leftJoin('review.service', 'service')
+            .leftJoin(
+                'review.respostaInstitucional',
+                'resposta',
+            )
+            .select([
+                'review.id',
+                'review.nota',
+                'review.comentario',
+                'review.isAnonimo',
+                'review.created_at',
+
+                'service.id',
+                'service.nome',
+
+                'resposta.id',
+                'resposta.resposta',
+                'resposta.created_at',
+            ])
+            .where('review.user_id = :userId', { userId })
+            .orderBy('review.created_at', 'DESC')
+            .getMany();
+
+        return reviews;
+    }
+
     // Consulta as avaliações dos serviços vinculados ao gestor.
     // Também carrega as respostas e preserva o anonimato.
     async findByGestor(gestorId: string) {

@@ -105,6 +105,14 @@ export default function RootLayout({
 
               {user ? (
                 <div className="flex items-center gap-3">
+                    {user.role === "CIDADAO" && (
+                        <Link
+                            href="/minha-area"
+                            className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3.5 text-xs font-semibold hover:bg-surface-muted transition-colors"
+                        >
+                            Minha Área
+                        </Link>
+                    )}
                   {user.role === "ADMIN" && (
                     <Link
                       href="/admin"

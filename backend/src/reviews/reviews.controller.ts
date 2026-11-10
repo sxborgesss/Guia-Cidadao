@@ -78,6 +78,21 @@ export class ReviewsController {
         );
     }
 
+    // Lista as avaliações feitas pelo cidadão autenticado.
+    @Get('minhas')
+    @UseGuards(JwtAuthGuard)
+    async findMyReviews(
+        @Req() request: AuthenticatedRequest,
+    ) {
+        if (request.user.role !== 'CIDADAO') {
+            throw new ForbiddenException(
+                'Apenas cidadãos podem consultar suas avaliações.',
+            );
+        }
+
+        return this.reviewsService.findByUser(request.user.id);
+    }
+
     // Responder oficialmente a uma avaliação.
     @Post(':reviewId/responder')
     @UseGuards(JwtAuthGuard)
