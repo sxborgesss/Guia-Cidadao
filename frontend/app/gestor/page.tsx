@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 interface UserData {
     id: string;
@@ -104,14 +105,14 @@ export default function GestorPage() {
                 const [responseReviews, responseServicos] =
                     await Promise.all([
                         fetch(
-                            "http://localhost:3001/reviews/gestor/minhas",
+                            `${API_URL}/reviews/gestor/minhas`,
                             {
                                 method: "GET",
                                 headers,
                             }
                         ),
                         fetch(
-                            "http://localhost:3001/users/gestor/meus-servicos",
+                            `${API_URL}/users/gestor/meus-servicos`,
                             {
                                 method: "GET",
                                 headers,
@@ -210,7 +211,7 @@ export default function GestorPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/reviews/${reviewId}/responder`,
+                `${API_URL}/reviews/${reviewId}/responder`,
                 {
                     method: "POST",
                     headers: {

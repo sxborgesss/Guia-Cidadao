@@ -1,200 +1,435 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 interface PublicService {
-  id: string;
-  nome: string;
-  categoria: string;
-  endereco: string;
-  mediaNota: number;
-  totalAvaliacoes: number;
+    id: string;
+    nome: string;
+    categoria: string;
+    endereco: string;
+    mediaNota: number | string;
+    totalAvaliacoes: number | string;
 }
 
-const CATEGORIAS_INFO: Record<string, { name: string; icon: string }> = {
-  saude: { name: "Saúde Pública", icon: "🏥" },
-  educacao: { name: "Educação Básica", icon: "🏫" },
-  transporte: { name: "Transporte e Vias", icon: "🚌" },
-  zeladoria: { name: "Zeladoria e Limpeza", icon: "🧹" },
+const CATEGORIAS_INFO: Record<
+    string,
+    { name: string; icon: string }
+> = {
+    saude: { name: "Saúde Pública", icon: "🏥" },
+    educacao: { name: "Educação Básica", icon: "🏫" },
+    transporte: { name: "Transporte e Vias", icon: "🚌" },
+    zeladoria: { name: "Zeladoria e Limpeza", icon: "🧹" },
+    infraestrutura: { name: "Infraestrutura", icon: "🏗️" },
 };
 
-export default function Home() {
-  const [servicos, setServicos] = useState<PublicService[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [termoBusca, setTermoBusca] = useState("");
-
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const res = await fetch("http://localhost:3001/services");
-        if (res.ok) {
-          const dados = await res.json();
-          setServicos(dados);
-        }
-      } catch (err) {
-        console.error("Erro ao procurar serviços:", err);
-      } finally {
-        setCarregando(false);
-      }
+function converterNumero(valor: number | string | null | undefined): number {
+    if (valor === null || valor === undefined || valor === "") {
+        return 0;
     }
-    carregar();
-  }, []);
 
-  const totalMonitorados = servicos.length;
-  const totalAvaliacoes = servicos.reduce((acc, s) => acc + (Number(s.totalAvaliacoes) || 0), 0);
-  const mediaGeral =
-    totalMonitorados > 0
-      ? (
-          servicos.reduce((acc, s) => acc + Number(s.mediaNota || 5), 0) /
-          totalMonitorados
-        ).toFixed(1)
-      : "5.0";
+    const numero = Number(valor);
 
-  const servicosFiltrados = servicos.filter(
-    (s) =>
-      s.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      s.endereco.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      s.categoria.toLowerCase().includes(termoBusca.toLowerCase())
-  );
+    return Number.isFinite(numero) ? numero : 0;
+}
 
-  const obterBadgeStatus = (nota: number) => {
-    if (nota >= 4.0) return { rotulo: "Excelente", classe: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" };
-    if (nota >= 3.0) return { rotulo: "Regular", classe: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
-    return { rotulo: "Atenção", classe: "bg-rose-500/10 text-rose-600 border-rose-500/20" };
-  };
+function normalizarTexto(valor: string) {
+    return valor
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
 
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 space-y-16">
-      {/* 1. Hero com Barra de Pesquisa */}
-      <section className="relative overflow-hidden rounded-3xl bg-surface border border-border p-8 sm:p-14 shadow-card text-center flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-brand-light px-3.5 py-1 text-xs font-semibold text-brand mb-6">
-          <span className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-          Painel Cidadão 2026 em Tempo Real
-        </div>
+function formatarCategoria(categoria: string) {
+    const categoriaNormalizada = normalizarTexto(categoria);
 
-        <h1 className="max-w-3xl text-3xl font-black tracking-tight sm:text-5xl text-foreground">
-          O seu olhar transforma os serviços públicos da cidade
-        </h1>
+    return (
+        CATEGORIAS_INFO[categoriaNormalizada]?.name ??
+        categoria
+    );
+}
 
-        <p className="mt-4 max-w-2xl text-base sm:text-lg text-foreground-muted">
-          Avalie infraestrutura, atendimento e qualidade de postos e equipamentos municipais. Seus dados orientam a gestão e a comunidade.
-        </p>
+function obterBadgeStatus(nota: number) {
+    if (nota >= 4.0) {
+        return {
+            rotulo: "Excelente",
+            classe:
+                "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        };
+    }
 
-        <div className="mt-8 flex w-full max-w-2xl flex-col sm:flex-row gap-2.5">
-          <input
-            type="text"
-            value={termoBusca}
-            onChange={(e) => setTermoBusca(e.target.value)}
-            placeholder="Procure por nome do posto, endereço ou categoria..."
-            className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand shadow-sm transition"
-          />
-        </div>
-      </section>
+    if (nota >= 3.0) {
+        return {
+            rotulo: "Regular",
+            classe:
+                "bg-amber-500/10 text-amber-600 border-amber-500/20",
+        };
+    }
 
-      {/* 2. Indicadores da Cidade Conectados ao Banco */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card flex flex-col justify-between">
-          <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Serviços Cadastrados</span>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{totalMonitorados}</span>
-            <p className="mt-0.5 text-xs text-foreground-muted">Postos ativos no sistema</p>
-          </div>
-        </div>
+    return {
+        rotulo: "Atenção",
+        classe:
+            "bg-rose-500/10 text-rose-600 border-rose-500/20",
+    };
+}
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card flex flex-col justify-between">
-          <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Total de Feedbacks</span>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{totalAvaliacoes}</span>
-            <p className="mt-0.5 text-xs text-foreground-muted">Avaliações registadas</p>
-          </div>
-        </div>
+export default function Home() {
+    const [servicos, setServicos] = useState<PublicService[]>([]);
+    const [carregando, setCarregando] = useState(true);
+    const [termoBusca, setTermoBusca] = useState("");
+    const [erro, setErro] = useState<string | null>(null);
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card flex flex-col justify-between">
-          <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Média Geral</span>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{mediaGeral} / 5.0</span>
-            <p className="mt-0.5 text-xs text-foreground-muted">Índice global de satisfação</p>
-          </div>
-        </div>
+    useEffect(() => {
+        let ativo = true;
 
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card flex flex-col justify-between">
-          <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider">Sincronização</span>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight">PostgreSQL</span>
-            <p className="mt-0.5 text-xs text-foreground-muted">Base de dados em linha</p>
-          </div>
-        </div>
-      </section>
+        async function carregar() {
+            try {
+                const res = await fetch(
+                    `${API_URL}/services`,
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                    },
+                );
 
-      {/* 3. Catálogo de Equipamentos Públicos Reais */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Equipamentos Públicos</h2>
-            <p className="text-sm text-foreground-muted">
-              Unidades oficiais de atendimento catalogadas
-            </p>
-          </div>
-        </div>
+                if (!res.ok) {
+                    throw new Error(
+                        "Não foi possível carregar os serviços públicos.",
+                    );
+                }
 
-        {carregando ? (
-          <p className="text-sm text-foreground-muted">A carregar serviços públicos...</p>
-        ) : servicosFiltrados.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-8 text-center text-foreground-muted">
-            Nenhum equipamento público encontrado. Cadastre novas unidades através do Painel Administrativo.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {servicosFiltrados.map((servico) => {
-              const badge = obterBadgeStatus(Number(servico.mediaNota));
-              const categoriaFormatada = CATEGORIAS_INFO[servico.categoria]?.name || servico.categoria;
+                const dados: PublicService[] = await res.json();
 
-              return (
-                <div
-                  key={servico.id}
-                  className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-card hover:shadow-hover transition"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">
-                        {categoriaFormatada}
-                      </span>
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.classe}`}>
-                        {badge.rotulo}
-                      </span>
-                    </div>
+                if (!Array.isArray(dados)) {
+                    throw new Error(
+                        "A API retornou um formato inválido de serviços.",
+                    );
+                }
 
-                    <h3 className="mt-2 text-lg font-bold text-foreground leading-snug">
-                      {servico.nome}
-                    </h3>
-                    <p className="mt-1 text-xs text-foreground-muted">{servico.endereco}</p>
-                  </div>
+                if (ativo) {
+                    setServicos(dados);
+                }
+            } catch (error) {
+                if (ativo) {
+                    setErro(
+                        error instanceof Error
+                            ? error.message
+                            : "Erro ao procurar serviços públicos.",
+                    );
+                }
+            } finally {
+                if (ativo) {
+                    setCarregando(false);
+                }
+            }
+        }
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-amber-500">★</span>
-                      <span className="text-base font-extrabold text-foreground">
-                        {Number(servico.mediaNota).toFixed(1)}
-                      </span>
-                      <span className="text-xs text-foreground-muted">
-                        ({servico.totalAvaliacoes})
-                      </span>
-                    </div>
+        carregar();
 
-                    <Link
-                      href={`/servicos/${servico.id}/avaliar`}
-                      className="inline-flex h-8 items-center justify-center rounded-lg bg-brand px-3 text-xs font-semibold text-brand-contrast hover:bg-brand-hover transition"
-                    >
-                      Avaliar
-                    </Link>
-                  </div>
+        return () => {
+            ativo = false;
+        };
+    }, []);
+
+    // Indicadores gerais
+    const totalMonitorados = servicos.length;
+
+    const totalAvaliacoes = servicos.reduce(
+        (acumulado, servico) =>
+            acumulado +
+            Math.max(
+                0,
+                converterNumero(servico.totalAvaliacoes),
+            ),
+        0,
+    );
+
+    // Média ponderada: somente serviços com avaliações entram no cálculo.
+    const somaNotasPonderadas = servicos.reduce(
+        (acumulado, servico) => {
+            const quantidade = Math.max(
+                0,
+                converterNumero(servico.totalAvaliacoes),
+            );
+
+            if (quantidade === 0) {
+                return acumulado;
+            }
+
+            const media = converterNumero(servico.mediaNota);
+
+            return acumulado + media * quantidade;
+        },
+        0,
+    );
+
+    const mediaGeral =
+        totalAvaliacoes > 0
+            ? (
+                  somaNotasPonderadas / totalAvaliacoes
+              ).toFixed(1)
+            : "—";
+
+    // Pesquisa de serviços
+    const servicosFiltrados = servicos.filter((servico) => {
+        const termo = normalizarTexto(termoBusca);
+
+        return (
+            normalizarTexto(servico.nome).includes(termo) ||
+            normalizarTexto(servico.endereco).includes(termo) ||
+            normalizarTexto(servico.categoria).includes(termo)
+        );
+    });
+
+    return (
+        <main className="mx-auto max-w-7xl space-y-16 px-4 py-10 sm:px-6 lg:px-8">
+            {/* 1. Apresentação */}
+            <section className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-border bg-surface p-8 text-center shadow-card sm:p-14">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-light px-3.5 py-1 text-xs font-semibold text-brand">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
+                    Painel Cidadão 2026 em Tempo Real
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </main>
-  );
+
+                <h1 className="max-w-3xl text-3xl font-black tracking-tight text-foreground sm:text-5xl">
+                    O seu olhar transforma os serviços públicos da cidade
+                </h1>
+
+                <p className="mt-4 max-w-2xl text-base text-foreground-muted sm:text-lg">
+                    Avalie infraestrutura, atendimento e qualidade de postos
+                    e equipamentos públicos. Suas avaliações ajudam a
+                    orientar a gestão e a comunidade.
+                </p>
+
+                <div className="mt-8 flex w-full max-w-2xl flex-col gap-2.5">
+                    <input
+                        type="text"
+                        value={termoBusca}
+                        onChange={(event) =>
+                            setTermoBusca(event.target.value)
+                        }
+                        placeholder="Procure por nome, endereço ou categoria..."
+                        aria-label="Pesquisar serviços públicos"
+                        className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm text-foreground shadow-sm transition placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand"
+                    />
+                </div>
+            </section>
+
+            {/* 2. Indicadores */}
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Serviços cadastrados
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : totalMonitorados}
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Unidades cadastradas no sistema
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Total de avaliações
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : totalAvaliacoes}
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Avaliações registradas pelos cidadãos
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Média geral
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : mediaGeral}
+                            {!carregando && totalAvaliacoes > 0 && (
+                                <span className="text-base text-foreground-muted">
+                                    {" "}
+                                    / 5.0
+                                </span>
+                            )}
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            {totalAvaliacoes > 0
+                                ? "Média ponderada das avaliações"
+                                : "Ainda não existem avaliações"}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Sincronização
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-xl font-extrabold tracking-tight text-emerald-600 sm:text-2xl">
+                            PostgreSQL
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Dados consultados pela API
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* 3. Catálogo */}
+            <section className="space-y-6">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                            Equipamentos públicos
+                        </h2>
+
+                        <p className="text-sm text-foreground-muted">
+                            Unidades oficiais de atendimento catalogadas
+                        </p>
+                    </div>
+
+                    {!carregando && (
+                        <span className="text-xs font-semibold text-foreground-muted">
+                            {servicosFiltrados.length} resultado(s)
+                        </span>
+                    )}
+                </div>
+
+                {erro && (
+                    <div
+                        role="alert"
+                        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700"
+                    >
+                        {erro}
+                    </div>
+                )}
+
+                {carregando ? (
+                    <p className="text-sm text-foreground-muted">
+                        Carregando serviços públicos...
+                    </p>
+                ) : servicosFiltrados.length === 0 ? (
+                    <div className="rounded-2xl border border-border bg-surface p-8 text-center text-foreground-muted">
+                        {termoBusca
+                            ? "Nenhum serviço corresponde à sua pesquisa."
+                            : "Nenhum equipamento público encontrado. Cadastre novas unidades através do Painel Administrativo."}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {servicosFiltrados.map((servico) => {
+                            const quantidadeAvaliacoes = Math.max(
+                                0,
+                                converterNumero(
+                                    servico.totalAvaliacoes,
+                                ),
+                            );
+
+                            const mediaNota = converterNumero(
+                                servico.mediaNota,
+                            );
+
+                            const temAvaliacoes =
+                                quantidadeAvaliacoes > 0;
+
+                            const badge = temAvaliacoes
+                                ? obterBadgeStatus(mediaNota)
+                                : null;
+
+                            const categoriaFormatada =
+                                formatarCategoria(servico.categoria);
+
+                            const icone =
+                                CATEGORIAS_INFO[
+                                    normalizarTexto(servico.categoria)
+                                ]?.icon ?? "🏛️";
+
+                            return (
+                                <article
+                                    key={servico.id}
+                                    className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-card transition hover:shadow-hover"
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">
+                                                {icone}{" "}
+                                                {categoriaFormatada}
+                                            </span>
+
+                                            {badge ? (
+                                                <span
+                                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.classe}`}
+                                                >
+                                                    {badge.rotulo}
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-semibold text-foreground-muted">
+                                                    Sem avaliações
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <h3 className="mt-3 text-lg font-bold leading-snug text-foreground">
+                                            {servico.nome}
+                                        </h3>
+
+                                        <p className="mt-1 text-xs text-foreground-muted">
+                                            {servico.endereco}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                                        <div className="flex items-baseline gap-1">
+                                            {temAvaliacoes ? (
+                                                <>
+                                                    <span className="text-xl font-black text-amber-500">
+                                                        ★
+                                                    </span>
+
+                                                    <span className="text-base font-extrabold text-foreground">
+                                                        {mediaNota.toFixed(1)}
+                                                    </span>
+
+                                                    <span className="text-xs text-foreground-muted">
+                                                        ({quantidadeAvaliacoes})
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs font-medium text-foreground-muted">
+                                                    Ainda não avaliado
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <Link
+                                            href={`/servicos/${servico.id}/avaliar`}
+                                            className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3 text-xs font-semibold text-brand-contrast transition hover:bg-brand-hover"
+                                        >
+                                            Avaliar
+                                        </Link>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+        </main>
+    );
 }

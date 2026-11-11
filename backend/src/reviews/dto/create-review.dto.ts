@@ -1,42 +1,30 @@
 import {
-  IsString,
-  IsInt,
-  Min,
-  Max,
-  IsBoolean,
-  IsOptional,
-  IsNotEmpty,
+    IsUUID,
+    IsInt,
+    Min,
+    Max,
+    IsBoolean,
+    IsOptional,
+    IsString,
+    IsNotEmpty,
+    MaxLength,
 } from 'class-validator';
 
 export class CreateReviewDto {
-  @IsString()
-  @IsNotEmpty()
-  serviceId: string;
+    @IsUUID()
+    service_id: string;
 
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  notaGeral: number;
+    @IsInt()
+    @Min(1)
+    @Max(5)
+    nota: number;
 
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  notaAtendimento: number;
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(2000)
+    comentario: string;
 
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  notaEspera: number;
-
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  notaInfraestrutura: number;
-
-  @IsOptional()
-  @IsString()
-  relato?: string;
-
-  @IsBoolean()
-  isAnonimo: boolean;
+    @IsOptional()
+    @IsBoolean()
+    isAnonimo?: boolean;
 }

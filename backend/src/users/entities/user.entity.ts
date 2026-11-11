@@ -1,4 +1,3 @@
-
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -42,6 +41,22 @@ export class User {
         (servico) => servico.gestores,
     )
     servicosGerenciados: PublicService[];
+
+    @Column({
+        name: 'password_reset_token_hash',
+        type: 'varchar',
+        nullable: true,
+        select: false,
+    })
+    passwordResetTokenHash: string | null;
+
+    @Column({
+        name: 'password_reset_expires_at',
+        type: 'timestamptz',
+        nullable: true,
+        select: false,
+    })
+    passwordResetExpiresAt: Date | null;
 
     @CreateDateColumn()
     created_at: Date;

@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import Link from "next/link";
 import "leaflet/dist/leaflet.css";
 
-// Correção dos ícones padrão do Leaflet no empacotamento do Next.js
 const customIcon = L.icon({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconRetinaUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
@@ -20,7 +20,12 @@ const customIcon = L.icon({
 export interface UnidadePublicaMapa {
     id: string;
     name: string;
-    category: "Saúde" | "Educação" | "Transporte" | "Infraestrutura";
+    category:
+        | "Saúde"
+        | "Educação"
+        | "Transporte"
+        | "Zeladoria"
+        | "Infraestrutura";
     esfera: "Municipal" | "Estadual" | "Federal";
     latitude: number;
     longitude: number;
@@ -31,9 +36,22 @@ interface MapaInnerProps {
     unidades: UnidadePublicaMapa[];
 }
 
-export default function MapaPalmasInner({ unidades }: MapaInnerProps) {
-    // Coordenadas centrais de Palmas (TO) - Praça dos Girassóis
+export default function MapaPalmasInner({
+    unidades,
+}: MapaInnerProps) {
     const PALMAS_CENTER: [number, number] = [-10.1844, -48.3336];
+
+    // Proteção adicional: nunca renderizar marcadores com coordenadas inválidas.
+    const unidadesValidas = unidades.filter((item) => {
+        return (
+            Number.isFinite(item.latitude) &&
+            Number.isFinite(item.longitude) &&
+            item.latitude >= -90 &&
+            item.latitude <= 90 &&
+            item.longitude >= -180 &&
+            item.longitude <= 180
+        );
+    });
 
     return (
         <div className="h-[480px] w-full overflow-hidden rounded-3xl border border-sky-100 shadow-card">
@@ -48,7 +66,7 @@ export default function MapaPalmasInner({ unidades }: MapaInnerProps) {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {unidades.map((item) => (
+                {unidadesValidas.map((item) => (
                     <Marker
                         key={item.id}
                         position={[item.latitude, item.longitude]}
@@ -56,14 +74,22 @@ export default function MapaPalmasInner({ unidades }: MapaInnerProps) {
                     >
                         <Popup className="font-sans">
                             <div className="p-1">
-                <span className="inline-block rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 uppercase">
-                  {item.esfera} • {item.category}
-                </span>
-                                <h4 className="mt-1 text-sm font-bold text-slate-900 leading-snug">
+                                <span className="inline-block rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-800">
+                                    {item.esfera} • {item.category}
+                                </span>
+
+                                <h4 className="mt-1 text-sm font-bold leading-snug text-slate-900">
                                     {item.name}
                                 </h4>
+
                                 <div className="mt-2 flex items-center justify-between text-xs">
-                                    <span className="font-bold text-amber-500">★ {item.averageRating.toFixed(1)}</span>
+                                    <span className="font-bold text-amber-500">
+                                        ★{" "}
+                                        {Number.isFinite(item.averageRating)
+                                            ? item.averageRating.toFixed(1)
+                                            : "0.0"}
+                                    </span>
+
                                     <Link
                                         href={`/servicos/${item.id}/avaliar`}
                                         className="font-semibold text-sky-600 hover:underline"

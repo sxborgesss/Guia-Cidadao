@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 type Perfil = "ADMIN" | "CIDADAO";
 
@@ -178,8 +179,8 @@ export default function OuvidoriaPage() {
 
         try {
             const rota = administrador
-                ? "http://localhost:3001/ouvidoria/admin/todas"
-                : "http://localhost:3001/ouvidoria/minhas";
+                ? `${API_URL}/ouvidoria/admin/todas`
+                : `${API_URL}/ouvidoria/minhas`;
 
             const response = await fetch(rota, {
                 method: "GET",
@@ -279,7 +280,7 @@ export default function OuvidoriaPage() {
         setEnviando(true);
 
         try {
-            const response = await fetch("http://localhost:3001/ouvidoria", {
+            const response = await fetch(`${API_URL}/ouvidoria`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -359,7 +360,7 @@ export default function OuvidoriaPage() {
             }
 
             const response = await fetch(
-                `http://localhost:3001/ouvidoria/admin/${manifestacao.id}`,
+                `${API_URL}/ouvidoria/admin/${manifestacao.id}`,
                 {
                     method: "PATCH",
                     headers: {

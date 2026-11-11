@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 interface PublicService {
     id: string;
@@ -85,7 +86,7 @@ export default function AvaliarPage() {
 
         try {
             const resServicos = await fetch(
-                "http://localhost:3001/services"
+                `${API_URL}/services`
             );
 
             if (resServicos.ok) {
@@ -101,7 +102,7 @@ export default function AvaliarPage() {
             }
 
             const resReviews = await fetch(
-                `http://localhost:3001/reviews/service/${serviceId}`
+                `${API_URL}/reviews/service/${serviceId}`
             );
 
             if (resReviews.ok) {
@@ -173,7 +174,7 @@ export default function AvaliarPage() {
             }
 
             const res = await fetch(
-                "http://localhost:3001/reviews",
+                `${API_URL}/reviews`,
                 {
                     method: "POST",
                     headers: {
@@ -280,7 +281,7 @@ export default function AvaliarPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/reviews/${reviewId}/denunciar`,
+                `${API_URL}/reviews/${reviewId}/denunciar`,
                 {
                     method: "POST",
                     headers: {

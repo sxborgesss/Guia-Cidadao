@@ -1,9 +1,10 @@
-
+﻿
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 interface UserData {
     id: string;
@@ -158,10 +159,46 @@ export default function AdminPage() {
     const [erroGestor, setErroGestor] = useState<string | null>(null);
     const [sucessoGestor, setSucessoGestor] = useState<string | null>(null);
 
+    // Requisitos da senha para criação de gestores
+    const requisitosSenhaGestor = [
+        {
+            texto: "Entre 8 e 64 caracteres",
+            valido: senhaGestor.length >= 8 && senhaGestor.length <= 64,
+        },
+        {
+            texto: "Uma letra maiúscula",
+            valido: /[A-Z]/.test(senhaGestor),
+        },
+        {
+            texto: "Uma letra minúscula",
+            valido: /[a-z]/.test(senhaGestor),
+        },
+        {
+            texto: "Pelo menos um número",
+            valido: /\d/.test(senhaGestor),
+        },
+        {
+            texto: "Um caractere especial (!@#$...)",
+            valido: /[^A-Za-z0-9\s]/.test(senhaGestor),
+        },
+        {
+            texto: "Não conter espaços",
+            valido: senhaGestor.length > 0 && !/\s/.test(senhaGestor),
+        },
+    ];
+
+    const senhaGestorValida = requisitosSenhaGestor.every(
+        (requisito) => requisito.valido,
+    );
+
+    const senhasGestorCoincidem =
+        confirmarSenhaGestor.length > 0 &&
+        senhaGestor === confirmarSenhaGestor;
+
     // Carregar serviços
     const carregarServicos = async () => {
         try {
-            const response = await fetch("http://localhost:3001/services");
+            const response = await fetch(`${API_URL}/services`);
 
             if (!response.ok) {
                 throw new Error("Erro ao carregar serviços.");
@@ -181,7 +218,7 @@ export default function AdminPage() {
         token: string
     ) => {
         const response = await fetch(
-            `http://localhost:3001/users/gestores/${gestorId}/servicos`,
+            `${API_URL}/users/gestores/${gestorId}/servicos`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -213,7 +250,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                "http://localhost:3001/users/gestores",
+                `${API_URL}/users/gestores`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -234,7 +271,7 @@ export default function AdminPage() {
                 listaGestores.map(async (gestor) => {
                     try {
                         const res = await fetch(
-                            `http://localhost:3001/users/gestores/${gestor.id}/servicos`,
+                            `${API_URL}/users/gestores/${gestor.id}/servicos`,
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`,
@@ -280,7 +317,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                "http://localhost:3001/reviews/admin/todas",
+                `${API_URL}/reviews/admin/todas`,
                 {
                     method: "GET",
                     headers: {
@@ -334,7 +371,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                "http://localhost:3001/reviews/admin/denuncias",
+                `${API_URL}/reviews/admin/denuncias`,
                 {
                     method: "GET",
                     headers: {
@@ -434,7 +471,7 @@ export default function AdminPage() {
                 throw new Error("Sessão expirada. Faça login novamente.");
             }
 
-            const response = await fetch("http://localhost:3001/services", {
+            const response = await fetch(`${API_URL}/services`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -495,7 +532,7 @@ export default function AdminPage() {
             }
 
             const response = await fetch(
-                `http://localhost:3001/services/${id}`,
+                `${API_URL}/services/${id}`,
                 {
                     method: "DELETE",
                     headers: {
@@ -551,7 +588,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/users/gestores/${gestorId}/servicos/${serviceId}`,
+                `${API_URL}/users/gestores/${gestorId}/servicos/${serviceId}`,
                 {
                     method: "POST",
                     headers: {
@@ -630,7 +667,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/users/gestores/${gestorId}/servicos/${serviceId}`,
+                `${API_URL}/users/gestores/${gestorId}/servicos/${serviceId}`,
                 {
                     method: "DELETE",
                     headers: {
@@ -682,13 +719,15 @@ export default function AdminPage() {
         setErroGestor(null);
         setSucessoGestor(null);
 
-        if (senhaGestor !== confirmarSenhaGestor) {
-            setErroGestor("As senhas não coincidem.");
+        if (!senhaGestorValida) {
+            setErroGestor(
+                "A senha deve ter entre 8 e 64 caracteres, incluindo letra maiúscula, letra minúscula, número e caractere especial, sem espaços.",
+            );
             return;
         }
 
-        if (senhaGestor.length < 6) {
-            setErroGestor("A senha deve ter pelo menos 6 caracteres.");
+        if (!senhasGestorCoincidem) {
+            setErroGestor("As senhas não coincidem.");
             return;
         }
 
@@ -703,7 +742,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                "http://localhost:3001/auth/admin/users",
+                `${API_URL}/auth/admin/users`,
                 {
                     method: "POST",
                     headers: {
@@ -778,7 +817,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/reviews/admin/${reviewId}`,
+                `${API_URL}/reviews/admin/${reviewId}`,
                 {
                     method: "DELETE",
                     headers: {
@@ -846,7 +885,7 @@ export default function AdminPage() {
 
         try {
             const response = await fetch(
-                `http://localhost:3001/reviews/admin/denuncias/${reportId}/status`,
+                `${API_URL}/reviews/admin/denuncias/${reportId}/status`,
                 {
                     method: "PATCH",
                     headers: {
@@ -1332,11 +1371,37 @@ export default function AdminPage() {
                                 type="password"
                                 value={senhaGestor}
                                 onChange={(e) => setSenhaGestor(e.target.value)}
-                                placeholder="Mínimo de 6 caracteres"
+                                placeholder="Crie uma senha forte"
+                                autoComplete="new-password"
                                 required
-                                minLength={6}
+                                minLength={8}
+                                maxLength={64}
                                 className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
                             />
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-3 text-sm font-bold text-slate-700">
+                                Requisitos da senha
+                            </p>
+
+                            <div className="space-y-2">
+                                {requisitosSenhaGestor.map((requisito, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex items-center gap-2 text-sm ${
+                                            requisito.valido
+                                                ? "text-emerald-700"
+                                                : "text-slate-500"
+                                        }`}
+                                    >
+                                        <span className="font-bold">
+                                            {requisito.valido ? "✓" : "○"}
+                                        </span>
+                                        <span>{requisito.texto}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         <div>
@@ -1351,15 +1416,35 @@ export default function AdminPage() {
                                     setConfirmarSenhaGestor(e.target.value)
                                 }
                                 placeholder="Digite a senha novamente"
+                                autoComplete="new-password"
                                 required
-                                minLength={6}
+                                minLength={8}
+                                maxLength={64}
                                 className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-sky-500"
                             />
+
+                            {confirmarSenhaGestor.length > 0 && (
+                                <p
+                                    className={`mt-2 text-xs font-medium ${
+                                        senhasGestorCoincidem
+                                            ? "text-emerald-700"
+                                            : "text-rose-600"
+                                    }`}
+                                >
+                                    {senhasGestorCoincidem
+                                        ? "✓ As senhas coincidem"
+                                        : "✗ As senhas não coincidem"}
+                                </p>
+                            )}
                         </div>
 
                         <button
                             type="submit"
-                            disabled={cadastrandoGestor}
+                            disabled={
+                                cadastrandoGestor ||
+                                !senhaGestorValida ||
+                                !senhasGestorCoincidem
+                            }
                             className="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {cadastrandoGestor
@@ -2110,3 +2195,4 @@ export default function AdminPage() {
         </main>
     );
 }
+

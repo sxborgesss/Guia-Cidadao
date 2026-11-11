@@ -1,236 +1,430 @@
+
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import MapaPalmas, { UnidadePublicaMapa } from "@/app/components/MapaPalmas";
+import { API_URL } from "@/lib/api";
 
-export default function PaginaServicos() {
-    const [busca, setBusca] = useState("");
-    const [esferaFiltro, setEsferaFiltro] = useState<string>("TODAS");
-    const [categoriaFiltro, setCategoriaFiltro] = useState<string>("TODAS");
+interface PublicService {
+    id: string;
+    nome: string;
+    categoria: string;
+    endereco: string;
+    mediaNota: number | string;
+    totalAvaliacoes: number | string;
+}
 
-    // Estados para armazenar os dados dinâmicos do banco e o estado de carregamento
-    const [unidadesBD, setUnidadesBD] = useState<UnidadePublicaMapa[]>([]);
-    const [carregando, setCarregando] = useState<boolean>(true);
-    const [erroRequisicao, setErroRequisicao] = useState<string | null>(null);
+const CATEGORIAS_INFO: Record<
+    string,
+    { name: string; icon: string }
+> = {
+    saude: { name: "Saúde Pública", icon: "🏥" },
+    educacao: { name: "Educação Básica", icon: "🏫" },
+    transporte: { name: "Transporte e Vias", icon: "🚌" },
+    zeladoria: { name: "Zeladoria e Limpeza", icon: "🧹" },
+    infraestrutura: { name: "Infraestrutura", icon: "🏗️" },
+};
 
-    useEffect(() => {
-        // Certifique-se que o NestJS (backend) está a rodar na porta 3001 e tem o CORS ativado
-        fetch("http://localhost:3001/services")
-            .then((resposta) => {
-                if (!resposta.ok) {
-                    throw new Error("Falha na resposta do servidor");
-                }
-                return resposta.json();
-            })
-            .then((dados) => {
-                // Mapeamento dos dados do banco para o formato esperado pelo mapa e listagem
-                const unidadesMapeadas: UnidadePublicaMapa[] = dados.map((item: any) => {
-                    let categoriaFormatada = "Infraestrutura";
-                    if (item.categoria === 'saude') categoriaFormatada = "Saúde";
-                    if (item.categoria === 'educacao') categoriaFormatada = "Educação";
-                    if (item.categoria === 'transporte') categoriaFormatada = "Transporte";
+function converterNumero(valor: number | string | null | undefined): number {
+    if (valor === null || valor === undefined || valor === "") {
+        return 0;
+    }
 
-                    return {
-                        id: item.id,
-                        name: item.nome,
-                        category: categoriaFormatada as any,
-                        // Utilizamos fallbacks para dados em falta enquanto a estrutura do banco não é totalmente atualizada
-                        esfera: item.esfera || "Municipal",
-                        latitude: Number(item.latitude) || -10.1844,
-                        longitude: Number(item.longitude) || -48.3336,
-                        averageRating: Number(item.mediaNota) || 0,
-                    };
-                });
-                setUnidadesBD(unidadesMapeadas);
-            })
-            .catch((erro) => {
-                console.error("Erro ao buscar as unidades:", erro);
-                setErroRequisicao(erro.message);
-            })
-            .finally(() => setCarregando(false));
-    }, []);
+    const numero = Number(valor);
 
-    const unidadesFiltradas = useMemo(() => {
-        return unidadesBD.filter((u) => {
-            const matchBusca = u.name.toLowerCase().includes(busca.toLowerCase());
-            const matchEsfera = esferaFiltro === "TODAS" || u.esfera.toUpperCase() === esferaFiltro;
-            // Para as categorias, a variável vem formatada ("Saúde", "Educação"), é preciso comparar em maiúsculas
-            let catOriginalUpper = u.category.toUpperCase();
-            if (catOriginalUpper === "SAÚDE") catOriginalUpper = "SAUDE";
-            if (catOriginalUpper === "EDUCAÇÃO") catOriginalUpper = "EDUCACAO";
+    return Number.isFinite(numero) ? numero : 0;
+}
 
-            const matchCategoria = categoriaFiltro === "TODAS" || catOriginalUpper === categoriaFiltro.replace(/[ÁÉÍÓÚ]/g, (match) => {
-                const map = { 'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U' };
-                return map[match as keyof typeof map];
-            });
+function normalizarTexto(valor: string) {
+    return valor
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
 
-            return matchBusca && matchEsfera && matchCategoria;
-        });
-    }, [busca, esferaFiltro, categoriaFiltro, unidadesBD]);
+function formatarCategoria(categoria: string) {
+    const categoriaNormalizada = normalizarTexto(categoria);
 
     return (
-        <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 space-y-12">
+        CATEGORIAS_INFO[categoriaNormalizada]?.name ??
+        categoria
+    );
+}
 
-            {/* 1. Hero com Campo de Busca e Filtros (Inspirado na Home) */}
-            <section
-                className="relative overflow-hidden rounded-3xl bg-surface border border-border p-8 sm:p-12 shadow-card text-center flex flex-col items-center">
-                <div
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-light px-3.5 py-1 text-xs font-semibold text-brand mb-6">
-                    Catálogo Geral
+function obterBadgeStatus(nota: number) {
+    if (nota >= 4.0) {
+        return {
+            rotulo: "Excelente",
+            classe:
+                "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        };
+    }
+
+    if (nota >= 3.0) {
+        return {
+            rotulo: "Regular",
+            classe:
+                "bg-amber-500/10 text-amber-600 border-amber-500/20",
+        };
+    }
+
+    return {
+        rotulo: "Atenção",
+        classe:
+            "bg-rose-500/10 text-rose-600 border-rose-500/20",
+    };
+}
+
+export default function Home() {
+    const [servicos, setServicos] = useState<PublicService[]>([]);
+    const [carregando, setCarregando] = useState(true);
+    const [termoBusca, setTermoBusca] = useState("");
+    const [erro, setErro] = useState<string | null>(null);
+
+    useEffect(() => {
+        let ativo = true;
+
+        async function carregar() {
+            try {
+                const res = await fetch(
+                    `${API_URL}/services`,
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                    },
+                );
+
+                if (!res.ok) {
+                    throw new Error(
+                        "Não foi possível carregar os serviços públicos.",
+                    );
+                }
+
+                const dados: PublicService[] = await res.json();
+
+                if (!Array.isArray(dados)) {
+                    throw new Error(
+                        "A API retornou um formato inválido de serviços.",
+                    );
+                }
+
+                if (ativo) {
+                    setServicos(dados);
+                }
+            } catch (error) {
+                if (ativo) {
+                    setErro(
+                        error instanceof Error
+                            ? error.message
+                            : "Erro ao procurar serviços públicos.",
+                    );
+                }
+            } finally {
+                if (ativo) {
+                    setCarregando(false);
+                }
+            }
+        }
+
+        carregar();
+
+        return () => {
+            ativo = false;
+        };
+    }, []);
+
+    // Indicadores gerais
+    const totalMonitorados = servicos.length;
+
+    const totalAvaliacoes = servicos.reduce(
+        (acumulado, servico) =>
+            acumulado +
+            Math.max(
+                0,
+                converterNumero(servico.totalAvaliacoes),
+            ),
+        0,
+    );
+
+    // Média ponderada: somente serviços com avaliações entram no cálculo.
+    const somaNotasPonderadas = servicos.reduce(
+        (acumulado, servico) => {
+            const quantidade = Math.max(
+                0,
+                converterNumero(servico.totalAvaliacoes),
+            );
+
+            if (quantidade === 0) {
+                return acumulado;
+            }
+
+            const media = converterNumero(servico.mediaNota);
+
+            return acumulado + media * quantidade;
+        },
+        0,
+    );
+
+    const mediaGeral =
+        totalAvaliacoes > 0
+            ? (
+                  somaNotasPonderadas / totalAvaliacoes
+              ).toFixed(1)
+            : "—";
+
+    // Pesquisa de serviços
+    const servicosFiltrados = servicos.filter((servico) => {
+        const termo = normalizarTexto(termoBusca);
+
+        return (
+            normalizarTexto(servico.nome).includes(termo) ||
+            normalizarTexto(servico.endereco).includes(termo) ||
+            normalizarTexto(servico.categoria).includes(termo)
+        );
+    });
+
+    return (
+        <main className="mx-auto max-w-7xl space-y-16 px-4 py-10 sm:px-6 lg:px-8">
+            {/* 1. Apresentação */}
+            <section className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-border bg-surface p-8 text-center shadow-card sm:p-14">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-light px-3.5 py-1 text-xs font-semibold text-brand">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
+                    Catálogo de Serviços Públicos
                 </div>
 
-                <h1 className="max-w-3xl text-3xl font-black tracking-tight sm:text-4xl text-foreground">
-                    Serviços e Unidades Públicas
+                <h1 className="max-w-3xl text-3xl font-black tracking-tight text-foreground sm:text-5xl">
+                    Explore os serviços públicos da cidade
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-base text-foreground-muted">
-                    Explore os postos de atendimento de Palmas. Utilize o mapa interativo ou os filtros abaixo para
-                    encontrar a unidade que deseja consultar ou avaliar.
+                <p className="mt-4 max-w-2xl text-base text-foreground-muted sm:text-lg">
+                    Avalie infraestrutura, atendimento e qualidade de postos
+                    e equipamentos públicos. Suas avaliações ajudam a
+                    orientar a gestão e a comunidade.
                 </p>
 
-                {/* Barra de Pesquisa e Filtros */}
-                <div className="mt-8 flex w-full max-w-4xl flex-col md:flex-row gap-3">
-                    <div className="relative flex-1">
-                        <input
-                            type="text"
-                            placeholder="Procurar por nome do posto, escola ou hospital..."
-                            value={busca}
-                            onChange={(e) => setBusca(e.target.value)}
-                            className="w-full h-12 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand shadow-sm transition"
-                        />
-                    </div>
-
-                    <div className="flex gap-3">
-                        <select
-                            value={categoriaFiltro}
-                            onChange={(e) => setCategoriaFiltro(e.target.value)}
-                            className="h-12 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-brand shadow-sm cursor-pointer"
-                        >
-                            <option value="TODAS">Todas as Categorias</option>
-                            <option value="SAUDE">🏥 Saúde</option>
-                            <option value="EDUCACAO">🏫 Educação</option>
-                            <option value="TRANSPORTE">🚌 Transporte</option>
-                            <option value="INFRAESTRUTURA">🏢 Infraestrutura</option>
-                        </select>
-
-                        <select
-                            value={esferaFiltro}
-                            onChange={(e) => setEsferaFiltro(e.target.value)}
-                            className="h-12 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-brand shadow-sm cursor-pointer"
-                        >
-                            <option value="TODAS">Todas as Esferas</option>
-                            <option value="MUNICIPAL">Municipal</option>
-                            <option value="ESTADUAL">Estadual</option>
-                            <option value="FEDERAL">Federal</option>
-                        </select>
-                    </div>
+                <div className="mt-8 flex w-full max-w-2xl flex-col gap-2.5">
+                    <input
+                        type="text"
+                        value={termoBusca}
+                        onChange={(event) =>
+                            setTermoBusca(event.target.value)
+                        }
+                        placeholder="Procure por nome, endereço ou categoria..."
+                        aria-label="Pesquisar serviços públicos"
+                        className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm text-foreground shadow-sm transition placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand"
+                    />
                 </div>
             </section>
 
-            {/* 2. Mapa Interativo Cívico */}
-            <section className="rounded-3xl border border-border bg-surface p-4 shadow-card">
-                <div className="rounded-2xl overflow-hidden border border-border">
-                    {carregando ? (
-                        <div className="flex h-[480px] w-full items-center justify-center bg-background text-sm text-foreground-muted">
-                            <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-                            A carregar unidades da base de dados...
-                        </div>
-                    ) : erroRequisicao ? (
-                        <div className="flex h-[480px] w-full flex-col items-center justify-center bg-rose-50 text-rose-600 text-sm">
-                            <span className="text-2xl mb-2">⚠️</span>
-                            Não foi possível carregar o mapa. Verifique se o servidor backend está a rodar.
-                        </div>
-                    ) : (
-                        <MapaPalmas unidades={unidadesFiltradas}/>
-                    )}
-                </div>
+            {/* 2. Indicadores */}
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Serviços cadastrados
+                    </span>
 
-                {!carregando && !erroRequisicao && (
-                    <div className="mt-3 text-center text-xs font-medium text-foreground-muted">
-                        Mostrando {unidadesFiltradas.length} unidade(s) no mapa interativo
-                    </div>
-                )}
-            </section>
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : totalMonitorados}
+                        </span>
 
-            {/* 3. Lista de Cartões (Inspirado no "Serviços em Foco" da Home) */}
-            <section className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">Lista de Unidades</h2>
-                        <p className="text-sm text-foreground-muted">
-                            Postos encontrados consoante os seus filtros
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Unidades cadastradas no sistema
                         </p>
                     </div>
                 </div>
 
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Total de avaliações
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : totalAvaliacoes}
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Avaliações registradas pelos cidadãos
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Média geral
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                            {carregando ? "—" : mediaGeral}
+                            {!carregando && totalAvaliacoes > 0 && (
+                                <span className="text-base text-foreground-muted">
+                                    {" "}
+                                    / 5.0
+                                </span>
+                            )}
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            {totalAvaliacoes > 0
+                                ? "Média ponderada das avaliações"
+                                : "Ainda não existem avaliações"}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
+                        Sincronização
+                    </span>
+
+                    <div className="mt-3">
+                        <span className="text-xl font-extrabold tracking-tight text-emerald-600 sm:text-2xl">
+                            PostgreSQL
+                        </span>
+
+                        <p className="mt-0.5 text-xs text-foreground-muted">
+                            Dados consultados pela API
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* 3. Catálogo */}
+            <section className="space-y-6">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                            Equipamentos públicos
+                        </h2>
+
+                        <p className="text-sm text-foreground-muted">
+                            Unidades oficiais de atendimento catalogadas
+                        </p>
+                    </div>
+
+                    {!carregando && (
+                        <span className="text-xs font-semibold text-foreground-muted">
+                            {servicosFiltrados.length} resultado(s)
+                        </span>
+                    )}
+                </div>
+
+                {erro && (
+                    <div
+                        role="alert"
+                        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700"
+                    >
+                        {erro}
+                    </div>
+                )}
+
                 {carregando ? (
-                    <div className="py-20 text-center text-foreground-muted">A carregar lista de unidades...</div>
-                ) : unidadesFiltradas.length === 0 ? (
-                    <div className="rounded-3xl border border-dashed border-border bg-surface py-20 text-center shadow-card">
-                        <span className="text-4xl">🔍</span>
-                        <h3 className="mt-4 text-base font-bold text-foreground">Nenhuma unidade encontrada</h3>
-                        <p className="text-sm text-foreground-muted mt-1">Tente ajustar os termos de pesquisa ou os filtros aplicados.</p>
-                        <button
-                            onClick={() => {
-                                setBusca("");
-                                setCategoriaFiltro("TODAS");
-                                setEsferaFiltro("TODAS");
-                            }}
-                            className="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-brand-light px-4 text-sm font-bold text-brand hover:bg-brand/20 transition-colors"
-                        >
-                            Limpar todos os filtros
-                        </button>
+                    <p className="text-sm text-foreground-muted">
+                        Carregando serviços públicos...
+                    </p>
+                ) : servicosFiltrados.length === 0 ? (
+                    <div className="rounded-2xl border border-border bg-surface p-8 text-center text-foreground-muted">
+                        {termoBusca
+                            ? "Nenhum serviço corresponde à sua pesquisa."
+                            : "Nenhum equipamento público encontrado. Cadastre novas unidades através do Painel Administrativo."}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                        {unidadesFiltradas.map((unidade) => {
-                            const badgeColors = {
-                                Municipal: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
-                                Estadual: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                                Federal: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
-                            }[unidade.esfera] || "bg-slate-500/10 text-slate-600 border-slate-500/20";
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {servicosFiltrados.map((servico) => {
+                            const quantidadeAvaliacoes = Math.max(
+                                0,
+                                converterNumero(
+                                    servico.totalAvaliacoes,
+                                ),
+                            );
+
+                            const mediaNota = converterNumero(
+                                servico.mediaNota,
+                            );
+
+                            const temAvaliacoes =
+                                quantidadeAvaliacoes > 0;
+
+                            const badge = temAvaliacoes
+                                ? obterBadgeStatus(mediaNota)
+                                : null;
+
+                            const categoriaFormatada =
+                                formatarCategoria(servico.categoria);
+
+                            const icone =
+                                CATEGORIAS_INFO[
+                                    normalizarTexto(servico.categoria)
+                                ]?.icon ?? "🏛️";
 
                             return (
-                                <div
-                                    key={unidade.id}
-                                    className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-card hover:shadow-hover transition"
+                                <article
+                                    key={servico.id}
+                                    className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-card transition hover:shadow-hover"
                                 >
                                     <div>
-                                        <div className="flex items-center justify-between gap-2 mb-3">
-                                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badgeColors}`}>
-                                                {unidade.esfera}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">
+                                                {icone}{" "}
+                                                {categoriaFormatada}
                                             </span>
-                                            <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted flex items-center gap-1">
-                                                {unidade.category === "Saúde" && "🏥"}
-                                                {unidade.category === "Educação" && "🏫"}
-                                                {unidade.category === "Transporte" && "🚌"}
-                                                {unidade.category === "Infraestrutura" && "🏢"}
-                                                {unidade.category}
-                                            </span>
+
+                                            {badge ? (
+                                                <span
+                                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.classe}`}
+                                                >
+                                                    {badge.rotulo}
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-semibold text-foreground-muted">
+                                                    Sem avaliações
+                                                </span>
+                                            )}
                                         </div>
 
-                                        <h3 className="text-lg font-bold text-foreground leading-snug">
-                                            {unidade.name}
+                                        <h3 className="mt-3 text-lg font-bold leading-snug text-foreground">
+                                            {servico.nome}
                                         </h3>
+
+                                        <p className="mt-1 text-xs text-foreground-muted">
+                                            {servico.endereco}
+                                        </p>
                                     </div>
 
                                     <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-xl font-black text-amber-500">★</span>
-                                            <span className="text-base font-extrabold text-foreground">
-                                                {unidade.averageRating.toFixed(1)}
-                                            </span>
+                                            {temAvaliacoes ? (
+                                                <>
+                                                    <span className="text-xl font-black text-amber-500">
+                                                        ★
+                                                    </span>
+
+                                                    <span className="text-base font-extrabold text-foreground">
+                                                        {mediaNota.toFixed(1)}
+                                                    </span>
+
+                                                    <span className="text-xs text-foreground-muted">
+                                                        ({quantidadeAvaliacoes})
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs font-medium text-foreground-muted">
+                                                    Ainda não avaliado
+                                                </span>
+                                            )}
                                         </div>
 
                                         <Link
-                                            href={`/servicos/${unidade.id}`}
-                                            className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-4 text-xs font-semibold text-brand-contrast hover:bg-brand-hover active:bg-brand-pressed transition"
+                                            href={`/servicos/${servico.id}/avaliar`}
+                                            className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3 text-xs font-semibold text-brand-contrast transition hover:bg-brand-hover"
                                         >
-                                            Ver Detalhes
+                                            Avaliar
                                         </Link>
                                     </div>
-                                </div>
+                                </article>
                             );
                         })}
                     </div>

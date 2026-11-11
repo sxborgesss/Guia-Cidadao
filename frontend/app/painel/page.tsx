@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 
 interface PublicService {
     id: string;
@@ -70,7 +71,7 @@ export default function PainelTransparenciaPage() {
             try {
                 // 1. Buscar todos os serviços cadastrados.
                 const responseServicos = await fetch(
-                    "http://localhost:3001/services",
+                    `${API_URL}/services`,
                     { cache: "no-store" }
                 );
 
@@ -91,7 +92,7 @@ export default function PainelTransparenciaPage() {
                 const resultados = await Promise.all(
                     listaServicos.map(async (servico) => {
                         const response = await fetch(
-                            `http://localhost:3001/reviews/service/${servico.id}`,
+                            `${API_URL}/reviews/service/${servico.id}`,
                             { cache: "no-store" }
                         );
 

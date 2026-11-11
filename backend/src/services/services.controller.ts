@@ -1,10 +1,10 @@
-
 import {
     Body,
     Controller,
     Delete,
     Get,
     Param,
+    Patch,
     Post,
     UseGuards,
 } from '@nestjs/common';
@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import {
     ServicesService,
     CreateServiceDto,
+    UpdateServiceDto,
 } from './services.service';
 
 import { RolesGuard } from '../auth/roles.guard';
@@ -25,13 +26,13 @@ export class ServicesController {
         private readonly servicesService: ServicesService,
     ) {}
 
-    // Consulta pública: qualquer cidadão pode visualizar serviços.
+    // Consulta pública dos serviços cadastrados.
     @Get()
     async listarTodos() {
         return this.servicesService.findAll();
     }
 
-    // Somente ADMIN pode cadastrar serviços.
+    // Cadastro restrito ao ADMIN.
     @Post()
     @UseGuards(AuthGuard('jwt'), RolesGuard)
     @Roles('ADMIN')
@@ -39,7 +40,24 @@ export class ServicesController {
         return this.servicesService.create(dto);
     }
 
-    // Somente ADMIN pode excluir serviços.
+    // Consulta individual de um serviço.
+    @Get(':id')
+    async buscarUm(@Param('id') id: string) {
+        return this.servicesService.findOne(id);
+    }
+
+    // Atualização restrita ao ADMIN.
+    @Patch(':id')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles('ADMIN')
+    async atualizar(
+        @Param('id') id: string,
+        @Body() dto: UpdateServiceDto,
+    ) {
+        return this.servicesService.update(id, dto);
+    }
+
+    // Exclusão restrita ao ADMIN.
     @Delete(':id')
     @UseGuards(AuthGuard('jwt'), RolesGuard)
     @Roles('ADMIN')
@@ -47,7 +65,7 @@ export class ServicesController {
         await this.servicesService.remove(id);
 
         return {
-            mensagem: 'Serviço removido com sucesso',
+            mensagem: 'Serviço removido com sucesso.',
         };
     }
 }

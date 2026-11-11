@@ -14,6 +14,7 @@ import {
 
 import { ReviewsService } from './reviews.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 interface AuthenticatedRequest {
     user: {
@@ -28,28 +29,21 @@ export class ReviewsController {
         private readonly reviewsService: ReviewsService,
     ) {}
 
-    // Criar avaliação usando a identidade do JWT.
+    // Criar avaliação com validação dos dados e identidade do JWT.
     @Post()
     @UseGuards(JwtAuthGuard)
     async criar(
-        @Body() body: any,
+        @Body() body: CreateReviewDto,
         @Req() request: AuthenticatedRequest,
     ) {
-        const serviceId = body.service_id || body.serviceId;
-        const nota = Number(body.nota);
-        const comentario = body.comentario;
-        const isAnonimo = body.isAnonimo === true;
-
-        const userId = request.user.id;
-
         return this.reviewsService.create(
             {
-                nota,
-                comentario,
-                service_id: serviceId,
-                isAnonimo,
+                nota: body.nota,
+                comentario: body.comentario,
+                service_id: body.service_id,
+                isAnonimo: body.isAnonimo ?? false,
             },
-            userId,
+            request.user.id,
         );
     }
 
@@ -90,7 +84,9 @@ export class ReviewsController {
             );
         }
 
-        return this.reviewsService.findByUser(request.user.id);
+        return this.reviewsService.findByUser(
+            request.user.id,
+        );
     }
 
     // Responder oficialmente a uma avaliação.
