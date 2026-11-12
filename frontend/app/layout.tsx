@@ -31,9 +31,10 @@ export default function RootLayout({
 
     useEffect(() => {
         const carregarUsuario = () => {
+            const token = localStorage.getItem("token");
             const storedUser = localStorage.getItem("user");
 
-            if (storedUser) {
+            if (token && storedUser) {
                 try {
                     setUser(JSON.parse(storedUser));
                 } catch {
@@ -134,6 +135,15 @@ export default function RootLayout({
                                             className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3.5 text-xs font-semibold transition-colors hover:bg-surface-muted"
                                         >
                                             Minha Área
+                                        </Link>
+                                    )}
+
+                                    {user.role === "GESTOR" && (
+                                        <Link
+                                            href="/gestor"
+                                            className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-900 px-3.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+                                        >
+                                            Painel do Gestor
                                         </Link>
                                     )}
 

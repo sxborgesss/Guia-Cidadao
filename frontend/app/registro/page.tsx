@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { API_URL } from "@/lib/api";
 
@@ -14,6 +14,16 @@ export default function PaginaRegistro() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
     const [sucesso, setSucesso] = useState(false);
+
+    const [veioDaAvaliacao, setVeioDaAvaliacao] = useState(false);
+
+    useEffect(() => {
+        const parametros = new URLSearchParams(window.location.search);
+
+        setVeioDaAvaliacao(
+            parametros.get("origem") === "avaliacao"
+        );
+    }, []);
 
     const requisitos = [
         {
@@ -147,10 +157,26 @@ export default function PaginaRegistro() {
                         Criar Conta
                     </h1>
 
-                    <p className="mt-2 text-sm text-slate-500">
-                        Junte-se ao Guia Cidadão e ajude a transformar
-                        a gestão pública de Palmas.
-                    </p>
+                    {veioDaAvaliacao ? (
+                        <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-4 text-left">
+                            <h2 className="text-sm font-bold text-sky-900">
+                                Sua opinião faz a diferença!
+                            </h2>
+
+                            <p className="mt-2 text-sm leading-relaxed text-sky-800">
+                                Para avaliar este serviço público, você precisa estar
+                                conectado à sua conta. Cadastre-se gratuitamente ou
+                                entre na sua conta para compartilhar sua experiência
+                                e contribuir para a melhoria dos serviços públicos
+                                de Palmas.
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="mt-2 text-sm text-slate-500">
+                            Junte-se ao Guia Cidadão e ajude a transformar
+                            a gestão pública de Palmas.
+                        </p>
+                    )}
                 </div>
 
                 {erro && (

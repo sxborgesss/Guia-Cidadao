@@ -134,44 +134,6 @@ export default function Home() {
         };
     }, []);
 
-    // Indicadores gerais
-    const totalMonitorados = servicos.length;
-
-    const totalAvaliacoes = servicos.reduce(
-        (acumulado, servico) =>
-            acumulado +
-            Math.max(
-                0,
-                converterNumero(servico.totalAvaliacoes),
-            ),
-        0,
-    );
-
-    // Média ponderada: somente serviços com avaliações entram no cálculo.
-    const somaNotasPonderadas = servicos.reduce(
-        (acumulado, servico) => {
-            const quantidade = Math.max(
-                0,
-                converterNumero(servico.totalAvaliacoes),
-            );
-
-            if (quantidade === 0) {
-                return acumulado;
-            }
-
-            const media = converterNumero(servico.mediaNota);
-
-            return acumulado + media * quantidade;
-        },
-        0,
-    );
-
-    const mediaGeral =
-        totalAvaliacoes > 0
-            ? (
-                  somaNotasPonderadas / totalAvaliacoes
-              ).toFixed(1)
-            : "—";
 
     // Pesquisa de serviços
     const servicosFiltrados = servicos.filter((servico) => {
@@ -214,81 +176,6 @@ export default function Home() {
                         aria-label="Pesquisar serviços públicos"
                         className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm text-foreground shadow-sm transition placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand"
                     />
-                </div>
-            </section>
-
-            {/* 2. Indicadores */}
-            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-                        Serviços cadastrados
-                    </span>
-
-                    <div className="mt-3">
-                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                            {carregando ? "—" : totalMonitorados}
-                        </span>
-
-                        <p className="mt-0.5 text-xs text-foreground-muted">
-                            Unidades cadastradas no sistema
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-                        Total de avaliações
-                    </span>
-
-                    <div className="mt-3">
-                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                            {carregando ? "—" : totalAvaliacoes}
-                        </span>
-
-                        <p className="mt-0.5 text-xs text-foreground-muted">
-                            Avaliações registradas pelos cidadãos
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-                        Média geral
-                    </span>
-
-                    <div className="mt-3">
-                        <span className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                            {carregando ? "—" : mediaGeral}
-                            {!carregando && totalAvaliacoes > 0 && (
-                                <span className="text-base text-foreground-muted">
-                                    {" "}
-                                    / 5.0
-                                </span>
-                            )}
-                        </span>
-
-                        <p className="mt-0.5 text-xs text-foreground-muted">
-                            {totalAvaliacoes > 0
-                                ? "Média ponderada das avaliações"
-                                : "Ainda não existem avaliações"}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-                        Sincronização
-                    </span>
-
-                    <div className="mt-3">
-                        <span className="text-xl font-extrabold tracking-tight text-emerald-600 sm:text-2xl">
-                            PostgreSQL
-                        </span>
-
-                        <p className="mt-0.5 text-xs text-foreground-muted">
-                            Dados consultados pela API
-                        </p>
-                    </div>
                 </div>
             </section>
 
