@@ -62,6 +62,29 @@ export default function PainelTransparenciaPage() {
     const [atualizar, setAtualizar] = useState(0);
 
     useEffect(() => {
+        const token = localStorage.getItem("token");
+        const usuarioSalvo = localStorage.getItem("user");
+
+        let roleUsuario = null;
+
+        try {
+            if (usuarioSalvo) {
+                const usuario = JSON.parse(usuarioSalvo);
+                roleUsuario = usuario.role;
+            }
+        } catch {
+            roleUsuario = null;
+        }
+
+        if (
+            !token ||
+            !usuarioSalvo ||
+            (roleUsuario !== "ADMIN" && roleUsuario !== "GESTOR")
+        ) {
+            window.location.replace("/");
+            return;
+        }
+
         let ativo = true;
 
         async function carregarDados() {

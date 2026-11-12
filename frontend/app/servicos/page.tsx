@@ -58,6 +58,21 @@ export default function PaginaServicos() {
     const [carregando, setCarregando] = useState(true);
     const [termoBusca, setTermoBusca] = useState("");
     const [erro, setErro] = useState<string | null>(null);
+    const [roleUsuario, setRoleUsuario] = useState<string | null>(null);
+
+    useEffect(() => {
+        const usuarioSalvo = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+
+        if (usuarioSalvo && token) {
+            try {
+                const usuario = JSON.parse(usuarioSalvo);
+                setRoleUsuario(usuario.role ?? null);
+            } catch {
+                setRoleUsuario(null);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         let ativo = true;
@@ -270,12 +285,23 @@ export default function PaginaServicos() {
                                             )}
                                         </div>
 
-                                        <Link
-                                            href={`/servicos/${servico.id}/avaliar`}
-                                            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-brand px-4 text-xs font-semibold text-brand-contrast transition hover:bg-brand-hover"
-                                        >
-                                            Avaliar
-                                        </Link>
+                                        {roleUsuario === null && (
+                                            <Link
+                                                href={`/registro?origem=avaliacao&servico=${encodeURIComponent(servico.id)}`}
+                                                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-brand px-4 text-xs font-semibold text-brand-contrast transition hover:bg-brand-hover"
+                                            >
+                                                Avaliar
+                                            </Link>
+                                        )}
+
+                                        {roleUsuario === "CIDADAO" && (
+                                            <Link
+                                                href={`/servicos/${servico.id}/avaliar`}
+                                                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-brand px-4 text-xs font-semibold text-brand-contrast transition hover:bg-brand-hover"
+                                            >
+                                                Avaliar
+                                            </Link>
+                                        )}
                                     </div>
                                 </article>
                             );

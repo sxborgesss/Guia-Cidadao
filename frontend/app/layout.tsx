@@ -103,12 +103,14 @@ export default function RootLayout({
                                     Mapa
                                 </Link>
 
-                                <Link
-                                    href="/painel"
-                                    className="transition-colors hover:text-foreground"
-                                >
-                                    Painel de Transparência
-                                </Link>
+                                {(user?.role === "ADMIN" || user?.role === "GESTOR") && (
+                                    <Link
+                                        href="/painel"
+                                        className="transition-colors hover:text-foreground"
+                                    >
+                                        Painel de Transparência
+                                    </Link>
+                                )}
 
                                 <Link
                                     href="/ouvidoria"
