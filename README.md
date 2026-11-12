@@ -72,6 +72,16 @@ A plataforma também disponibiliza áreas específicas para gestores e administr
 | Autenticação | Passport, JWT e bcrypt |
 | Versionamento | Git e GitHub |
 
+## 🗄️ Modelagem do Banco de Dados
+
+O banco de dados do Guia Cidadão utiliza PostgreSQL e é composto por 7 tabelas, responsáveis pelo gerenciamento de usuários, serviços públicos, avaliações, respostas institucionais, denúncias e manifestações da ouvidoria.
+
+### Diagrama Entidade-Relacionamento (DER)
+
+A imagem abaixo apresenta a estrutura do banco de dados, incluindo suas entidades, atributos, chaves primárias, chaves estrangeiras e relacionamentos.
+
+![Diagrama Entidade-Relacionamento do Guia Cidadão](./docs/der-guia-cidadao.png)
+
 ## Estrutura do repositório
 
 ```text
